@@ -24,8 +24,10 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { type AgentDetail as AgentDetailType, type ExperimentInfo, type SessionInfo, api } from "@/lib/api";
+import { ExecutorChart } from "@/components/charts/ExecutorChart";
+import { type AgentDetail as AgentDetailType, type AgentExecutorRow, type ExperimentInfo, type ExecutorInfo, type SessionInfo, api } from "@/lib/api";
 import { type ParsedJournal, type ParsedSnapshot, parseJournal, parseSnapshot } from "@/lib/parse-agent";
+import { DetailPanel, ExecutorTable, type SortDir, type SortKey } from "@/pages/Executors";
 
 // ── Tabs ──
 
@@ -399,6 +401,12 @@ function InstanceCard({ instance }: { instance: import("@/lib/api").RunningInsta
       )}
 
       <div className="grid grid-cols-2 gap-x-6 gap-y-1 font-mono text-xs md:grid-cols-4">
+        {instance.agent_key && (
+          <div className="flex justify-between">
+            <span className="text-[var(--color-text-muted)]">model</span>
+            <span className="text-[var(--color-primary)]">{instance.agent_key}</span>
+          </div>
+        )}
         <div className="flex justify-between">
           <span className="text-[var(--color-text-muted)]">server</span>
           <span className="text-[var(--color-text)]">{instance.server_name || "auto"}</span>
@@ -422,6 +430,137 @@ function InstanceCard({ instance }: { instance: import("@/lib/api").RunningInsta
   );
 }
 
+function PerformancePanel({ slug }: { slug: string }) {
+  const { data } = useQuery({
+    queryKey: ["agent-performance", slug],
+    queryFn: () => api.getAgentPerformance(slug),
+    refetchInterval: 10000,
+  });
+  const totals = data?.totals || {};
+  const allRows = data?.sessions || [];
+  const sessions = allRows.filter((s) => s.kind === "session");
+  const totalPnl = Number(totals.total_pnl ?? 0);
+  const realized = Number(totals.realized_pnl ?? 0);
+  const unrealized = Number(totals.unrealized_pnl ?? 0);
+  const volume = Number(totals.volume ?? 0);
+  const fees = Number(totals.fees ?? 0);
+  const openPos = Number(totals.open_positions ?? 0);
+  const pnlColor = totalPnl >= 0 ? "text-emerald-400" : "text-red-400";
+
+  const closed = sessions.reduce((s, x) => s + x.closed_count, 0);
+  const wins = sessions.reduce((s, x) => s + Math.round(x.win_rate * x.closed_count), 0);
+  const winRate = closed > 0 ? (wins / closed) * 100 : 0;
+  const trades = sessions.reduce((s, x) => s + x.trade_count, 0);
+
+  return (
+    <div className="space-y-4 lg:col-span-2">
+      {/* Stat grid */}
+      <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+        <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
+          <Zap className="h-3.5 w-3.5" /> Performance
+        </h3>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
+          <div>
+            <span className="block text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">Total PnL</span>
+            <span className={`text-lg font-mono font-semibold ${pnlColor}`}>
+              ${totalPnl >= 0 ? "+" : ""}{totalPnl.toFixed(2)}
+            </span>
+          </div>
+          <div>
+            <span className="block text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">Realized</span>
+            <span className="text-lg font-mono text-[var(--color-text)]">${realized.toFixed(2)}</span>
+          </div>
+          <div>
+            <span className="block text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">Unrealized</span>
+            <span className="text-lg font-mono text-[var(--color-text)]">${unrealized.toFixed(2)}</span>
+          </div>
+          <div>
+            <span className="block text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">Volume</span>
+            <span className="text-lg font-mono text-[var(--color-text)]">
+              ${volume.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            </span>
+          </div>
+          <div>
+            <span className="block text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">Fees</span>
+            <span className="text-lg font-mono text-[var(--color-text)]">${fees.toFixed(2)}</span>
+          </div>
+          <div>
+            <span className="block text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">Win Rate</span>
+            <span className="text-lg font-mono text-[var(--color-text)]">{winRate.toFixed(0)}%</span>
+          </div>
+          <div>
+            <span className="block text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">Trades</span>
+            <span className="text-lg font-mono text-[var(--color-text)]">{trades}</span>
+          </div>
+          <div>
+            <span className="block text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">Open</span>
+            <span className="text-lg font-mono text-[var(--color-text)]">{openPos}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Sessions table */}
+      <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+        <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
+          <Clock className="h-3.5 w-3.5" /> Sessions ({sessions.length})
+        </h3>
+        {sessions.length === 0 ? (
+          <p className="text-xs text-[var(--color-text-muted)]">No sessions yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-left text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">
+                  <th className="px-2 py-1">#</th>
+                  <th className="px-2 py-1">Kind</th>
+                  <th className="px-2 py-1">Status</th>
+                  <th className="px-2 py-1 text-right">Total PnL</th>
+                  <th className="px-2 py-1 text-right">Realized</th>
+                  <th className="px-2 py-1 text-right">Unrealized</th>
+                  <th className="px-2 py-1 text-right">Volume</th>
+                  <th className="px-2 py-1 text-right">Trades</th>
+                  <th className="px-2 py-1 text-right">Open</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sessions
+                  .slice()
+                  .sort((a, b) => (b.kind === a.kind ? b.session_num - a.session_num : a.kind === "experiment" ? 1 : -1))
+                  .map((s) => {
+                    const pnlCol = s.total_pnl >= 0 ? "text-emerald-400" : "text-red-400";
+                    return (
+                      <tr
+                        key={s.agent_id}
+                        className="border-t border-[var(--color-border)]/40 font-mono"
+                      >
+                        <td className="px-2 py-1.5 text-[var(--color-text)]">{s.session_num}</td>
+                        <td className="px-2 py-1.5 text-[var(--color-text-muted)]">{s.kind}</td>
+                        <td className={`px-2 py-1.5 ${s.status === "running" ? "text-emerald-400" : "text-[var(--color-text-muted)]"}`}>
+                          {s.status || "—"}
+                        </td>
+                        <td className={`px-2 py-1.5 text-right ${pnlCol}`}>
+                          ${s.total_pnl >= 0 ? "+" : ""}{s.total_pnl.toFixed(2)}
+                        </td>
+                        <td className="px-2 py-1.5 text-right text-[var(--color-text-muted)]">${s.realized_pnl.toFixed(2)}</td>
+                        <td className="px-2 py-1.5 text-right text-[var(--color-text-muted)]">${s.unrealized_pnl.toFixed(2)}</td>
+                        <td className="px-2 py-1.5 text-right text-[var(--color-text-muted)]">
+                          ${s.volume.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        </td>
+                        <td className="px-2 py-1.5 text-right text-[var(--color-text-muted)]">{s.trade_count}</td>
+                        <td className="px-2 py-1.5 text-right text-[var(--color-text-muted)]">{s.open_count}</td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
 function OverviewTab({ agent }: { agent: AgentDetailType }) {
   const config = agent.config as Record<string, unknown>;
   const riskLimits = (config.risk_limits || {}) as Record<string, unknown>;
@@ -431,6 +570,8 @@ function OverviewTab({ agent }: { agent: AgentDetailType }) {
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <PerformancePanel slug={agent.slug} />
+
       {/* Running Instances — shown when there are active sessions */}
       {hasRunning && (
         <div className="rounded-lg border border-emerald-500/20 bg-[var(--color-surface)] p-4 lg:col-span-2">
@@ -700,14 +841,25 @@ const SESSION_SUB_TABS = [
 
 type SessionSubTabId = (typeof SESSION_SUB_TABS)[number]["id"];
 
-function SessionMetricsBar({ journal }: { journal: ParsedJournal }) {
+function SessionMetricsBar({
+  journal,
+  perf,
+}: {
+  journal: ParsedJournal;
+  perf?: import("@/lib/api").AgentPerformance | null;
+}) {
   const { summary, metrics, ticks } = journal;
   const lastMetric = metrics.length > 0 ? metrics[metrics.length - 1] : null;
+  const pnl = perf ? perf.total_pnl : summary.pnl;
+  const openCount = perf ? perf.open_count : summary.openExecutors;
+  const volume = perf?.volume;
   const stats = [
     { label: "Ticks", value: String(summary.lastTick || ticks.length), color: "text-[var(--color-text)]" },
-    { label: "PnL", value: `$${summary.pnl >= 0 ? "+" : ""}${summary.pnl.toFixed(2)}`, color: summary.pnl >= 0 ? "text-emerald-400" : "text-red-400" },
-    { label: "Open Executors", value: String(summary.openExecutors), color: "text-[var(--color-text)]" },
-    { label: "Exposure", value: lastMetric ? `$${lastMetric.exposure.toFixed(2)}` : "$0.00", color: "text-[var(--color-text)]" },
+    { label: "PnL", value: `$${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}`, color: pnl >= 0 ? "text-emerald-400" : "text-red-400" },
+    { label: "Open Executors", value: String(openCount), color: "text-[var(--color-text)]" },
+    volume !== undefined
+      ? { label: "Volume", value: `$${volume.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, color: "text-[var(--color-text)]" }
+      : { label: "Exposure", value: lastMetric ? `$${lastMetric.exposure.toFixed(2)}` : "$0.00", color: "text-[var(--color-text)]" },
   ];
 
   return (
@@ -722,8 +874,15 @@ function SessionMetricsBar({ journal }: { journal: ParsedJournal }) {
   );
 }
 
-function SessionOverview({ journal }: { journal: ParsedJournal }) {
+function SessionOverview({
+  journal,
+  perf,
+}: {
+  journal: ParsedJournal;
+  perf?: import("@/lib/api").AgentPerformance | null;
+}) {
   const { summary, executors, metrics } = journal;
+  const pnl = perf ? perf.total_pnl : summary.pnl;
 
   return (
     <div className="space-y-4">
@@ -749,8 +908,8 @@ function SessionOverview({ journal }: { journal: ParsedJournal }) {
           </div>
           <div>
             <span className="block text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">PnL</span>
-            <span className={`font-mono text-sm ${summary.pnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-              ${summary.pnl >= 0 ? "+" : ""}{summary.pnl.toFixed(2)}
+            <span className={`font-mono text-sm ${pnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+              ${pnl >= 0 ? "+" : ""}{pnl.toFixed(2)}
             </span>
           </div>
           <div>
@@ -1058,6 +1217,145 @@ function SystemPromptCard({ prompt, charCount }: { prompt: string; charCount: nu
   );
 }
 
+function agentRowToExecutorInfo(row: AgentExecutorRow): ExecutorInfo {
+  return {
+    id: row.id,
+    type: row.type,
+    connector: row.connector || "unknown",
+    trading_pair: row.pair,
+    side: row.side,
+    status: row.status,
+    close_type: row.close_type,
+    pnl: row.pnl,
+    volume: row.volume,
+    timestamp: row.timestamp,
+    controller_id: row.controller_id,
+    cum_fees_quote: row.fees,
+    net_pnl_pct: 0,
+    entry_price: row.entry_price,
+    current_price: row.current_price,
+    close_timestamp: row.close_timestamp,
+    custom_info: row.custom_info ?? {},
+    config: row.config ?? {},
+  };
+}
+
+function SessionExecutors({ slug, sessionNum, serverName }: { slug: string; sessionNum: number; serverName: string }) {
+  const { data: sessionDetail } = useQuery({
+    queryKey: ["agent-session-executors", slug, sessionNum],
+    queryFn: () => api.getAgentSessionExecutors(slug, sessionNum),
+    refetchInterval: 10000,
+  });
+
+  const executors = sessionDetail?.executors ?? [];
+
+  // Convert rows to ExecutorInfo for table & chart
+  const executorInfos = useMemo(
+    () => executors.map(agentRowToExecutorInfo),
+    [executors],
+  );
+
+  // Group executors by connector:pair for charts
+  const chartGroups = useMemo(() => {
+    if (!serverName || executorInfos.length === 0) return [];
+    const groups = new Map<string, ExecutorInfo[]>();
+    for (const ex of executorInfos) {
+      if (!ex.trading_pair) continue;
+      const key = `${ex.connector}:${ex.trading_pair}`;
+      const arr = groups.get(key);
+      if (arr) arr.push(ex);
+      else groups.set(key, [ex]);
+    }
+    return Array.from(groups.entries());
+  }, [executorInfos, serverName]);
+
+  // Table state
+  const [sortKey, setSortKey] = useState<SortKey>("timestamp");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [selectedExecutor, setSelectedExecutor] = useState<ExecutorInfo | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const stoppingIds = useMemo(() => new Set<string>(), []);
+
+  const handleSort = useCallback((key: SortKey) => {
+    setSortDir((prev) => (sortKey === key ? (prev === "asc" ? "desc" : "asc") : "desc"));
+    setSortKey(key);
+  }, [sortKey]);
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const selectAll = useCallback(() => {
+    setSelectedIds((prev) =>
+      prev.size === executorInfos.length ? new Set() : new Set(executorInfos.map((e) => e.id)),
+    );
+  }, [executorInfos]);
+
+  const allSelected = selectedIds.size === executorInfos.length && executorInfos.length > 0;
+
+  if (!sessionDetail) {
+    return (
+      <div className="flex h-32 items-center justify-center">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-primary)]" />
+      </div>
+    );
+  }
+
+  if (executors.length === 0) {
+    return <p className="py-8 text-center text-sm text-[var(--color-text-muted)]">No executors for this session.</p>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Executor charts by trading pair */}
+      {chartGroups.map(([key, group]) => (
+        <ExecutorChart
+          key={key}
+          server={serverName}
+          executors={group}
+          connector={group[0].connector}
+          tradingPair={group[0].trading_pair}
+          height={280}
+        />
+      ))}
+
+      {/* Executor table + detail panel */}
+      <div className="flex">
+        <div className={`min-w-0 ${selectedExecutor ? "flex-1" : "w-full"}`}>
+          <ExecutorTable
+            executors={executorInfos}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            onSort={handleSort}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
+            onSelectAll={selectAll}
+            allSelected={allSelected}
+            onRowClick={setSelectedExecutor}
+            selectedExecutorId={selectedExecutor?.id ?? null}
+            onStop={() => {}}
+            stoppingIds={stoppingIds}
+          />
+        </div>
+        {selectedExecutor && serverName && (
+          <DetailPanel
+            executor={selectedExecutor}
+            server={serverName}
+            onClose={() => setSelectedExecutor(null)}
+            onStop={() => {}}
+            stopping={false}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SessionSnapshots({ slug, sessionNum }: { slug: string; sessionNum: number }) {
   const [selectedTick, setSelectedTick] = useState<number>(0);
 
@@ -1108,7 +1406,7 @@ function SessionSnapshots({ slug, sessionNum }: { slug: string; sessionNum: numb
   );
 }
 
-function SessionsTab({ slug, sessions }: { slug: string; sessions: SessionInfo[] }) {
+function SessionsTab({ slug, sessions, serverName }: { slug: string; sessions: SessionInfo[]; serverName: string }) {
   const [selectedSessionNum, setSelectedSessionNum] = useState<number>(
     sessions.length > 0 ? sessions[0].number : 0
   );
@@ -1126,6 +1424,14 @@ function SessionsTab({ slug, sessions }: { slug: string; sessions: SessionInfo[]
     if (!journalData?.content) return null;
     return parseJournal(journalData.content);
   }, [journalData?.content]);
+
+  const { data: sessionPerfData } = useQuery({
+    queryKey: ["agent-session-executors", slug, selectedSessionNum],
+    queryFn: () => api.getAgentSessionExecutors(slug, selectedSessionNum),
+    enabled: selectedSessionNum > 0,
+    refetchInterval: 10000,
+  });
+  const sessionPerf = sessionPerfData?.performance ?? null;
 
   if (sessions.length === 0) {
     return (
@@ -1147,7 +1453,7 @@ function SessionsTab({ slug, sessions }: { slug: string; sessions: SessionInfo[]
         />
       </div>
 
-      {parsedJournal && <SessionMetricsBar journal={parsedJournal} />}
+      {parsedJournal && <SessionMetricsBar journal={parsedJournal} perf={sessionPerf} />}
 
       {/* Sub-tab bar */}
       <div className="flex gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-1">
@@ -1174,7 +1480,15 @@ function SessionsTab({ slug, sessions }: { slug: string; sessions: SessionInfo[]
         </div>
       ) : (
         <>
-          {activeSubTab === "overview" && <SessionOverview journal={parsedJournal} />}
+          {activeSubTab === "overview" && selectedSession && (
+            <div className="space-y-4">
+              <SessionExecutors slug={slug} sessionNum={selectedSession.number} serverName={serverName} />
+              <SessionOverview journal={parsedJournal} perf={sessionPerf} />
+            </div>
+          )}
+          {activeSubTab === "overview" && !selectedSession && (
+            <SessionOverview journal={parsedJournal} perf={sessionPerf} />
+          )}
           {activeSubTab === "activity" && <SessionActivity journal={parsedJournal} />}
           {activeSubTab === "snapshots" && selectedSession && (
             <SessionSnapshots slug={slug} sessionNum={selectedSession.number} />
@@ -1244,6 +1558,11 @@ function ExperimentsTab({ slug, experiments }: { slug: string; experiments: Expe
                     <span className={`inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-medium ${modeColor}`}>
                       {modeLabel}
                     </span>
+                    {exp.agent_key && (
+                      <span className="inline-flex rounded-full bg-[var(--color-primary)]/10 px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-primary)]">
+                        {exp.agent_key}
+                      </span>
+                    )}
                   </div>
                 </div>
                 {isActive && <div className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[var(--color-primary)]" />}
@@ -1367,7 +1686,7 @@ export function AgentDetail() {
       {activeTab === "overview" && <OverviewTab agent={agent} />}
       {activeTab === "strategy" && <StrategyTab slug={slug!} content={agent.agent_md} />}
       {activeTab === "learnings" && <LearningsTab slug={slug!} content={agent.learnings} />}
-      {activeTab === "sessions" && <SessionsTab slug={slug!} sessions={agent.sessions} />}
+      {activeTab === "sessions" && <SessionsTab slug={slug!} sessions={agent.sessions} serverName={(agent.config.server_name as string) || ""} />}
       {activeTab === "experiments" && <ExperimentsTab slug={slug!} experiments={agent.experiments || []} />}
     </div>
   );
