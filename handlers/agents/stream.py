@@ -308,8 +308,59 @@ class TelegramStreamer:
                 parse_mode=parse_mode,
                 api_kwargs={"draft_id": self._draft_id},
             )
+            return
+        except BadRequest as e:
+            log.warning(
+                "Final send with draft_id rejected; retrying without draft promotion "
+                "(chat_id=%s draft_id=%s parse_mode=%s): %s",
+                self._chat_id,
+                self._draft_id,
+                parse_mode,
+                e,
+            )
         except Exception:
-            log.exception("Final send failed")
+            log.exception(
+                "Final send with draft_id failed (chat_id=%s draft_id=%s parse_mode=%s)",
+                self._chat_id,
+                self._draft_id,
+                parse_mode,
+            )
+
+        try:
+            await self._bot.send_message(
+                chat_id=self._chat_id,
+                text=text,
+                parse_mode=parse_mode,
+            )
+            return
+        except BadRequest as e:
+            if parse_mode:
+                log.warning(
+                    "Final send with parse_mode=%s rejected; retrying as plain text "
+                    "(chat_id=%s): %s",
+                    parse_mode,
+                    self._chat_id,
+                    e,
+                )
+                try:
+                    await self._bot.send_message(
+                        chat_id=self._chat_id,
+                        text=text,
+                    )
+                    return
+                except Exception:
+                    log.exception(
+                        "Plain-text final send fallback failed (chat_id=%s)",
+                        self._chat_id,
+                    )
+                    return
+            log.exception("Final send failed without parse mode (chat_id=%s)", self._chat_id)
+        except Exception:
+            log.exception(
+                "Final send fallback failed (chat_id=%s parse_mode=%s)",
+                self._chat_id,
+                parse_mode,
+            )
 
     async def _safe_edit_tools(self, message_id: int, text: str) -> None:
         try:
