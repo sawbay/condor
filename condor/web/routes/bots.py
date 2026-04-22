@@ -15,6 +15,8 @@ from condor.web.models import (
     BotInfo,
     BotSummary,
     BotsPageResponse,
+    BotTradeHistoryItem,
+    BotTradeHistoryResponse,
     ControllerConfigDetail,
     ControllerConfigSummary,
     ControllerInfo,
@@ -28,21 +30,36 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["bots"])
 
 
-def _parse_bot(bot: dict) -> BotInfo:
+def _parse_bot(bot: dict, fallback_id: str = "") -> BotInfo:
     # Aggregate PnL from controller performance if available
     pnl = float(bot.get("pnl", 0))
     if not pnl and "performance" in bot:
         perf = bot["performance"]
         if isinstance(perf, dict):
-            for ctrl in perf.values():
-                if isinstance(ctrl, dict):
-                    pnl += float(ctrl.get("realized_pnl_quote", 0))
-                    pnl += float(ctrl.get("unrealized_pnl_quote", 0))
+            for ctrl_name, ctrl in perf.items():
+                if ctrl_name == "history" or not isinstance(ctrl, dict):
+                    continue
+                ctrl_perf = ctrl.get("performance", {})
+                if isinstance(ctrl_perf, dict):
+                    pnl += float(ctrl_perf.get("realized_pnl_quote", 0))
+                    pnl += float(ctrl_perf.get("unrealized_pnl_quote", 0))
+
+    bot_id = (
+        bot.get("id")
+        or bot.get("bot_id")
+        or bot.get("bot_name")
+        or bot.get("name")
+        or fallback_id
+    )
+    bot_name = bot.get("bot_name") or bot.get("name") or bot_id or fallback_id
+    status = bot.get("status")
+    if not status and bot.get("is_running") is not None:
+        status = "running" if bot.get("is_running") else "stopped"
 
     return BotInfo(
-        id=str(bot.get("id", bot.get("bot_name", ""))),
-        name=bot.get("bot_name", bot.get("id", "")),
-        status=bot.get("status", "unknown"),
+        id=str(bot_id or fallback_id),
+        name=str(bot_name or fallback_id),
+        status=str(status or "unknown"),
         connector=bot.get("connector", ""),
         trading_pair=bot.get("trading_pair", ""),
         pnl=pnl,
@@ -73,6 +90,72 @@ def _extract_bots_list(result: Any) -> list[dict]:
         return [b for b in result if isinstance(b, dict)]
     logger.warning("Bot status API returned unexpected type: %s", type(result).__name__)
     return []
+
+
+def _unwrap_bot_detail(result: Any) -> dict[str, Any]:
+    """Normalize a single-bot response into the inner payload when wrapped."""
+    if not isinstance(result, dict):
+        return {}
+
+    data = result.get("data")
+    if isinstance(data, dict):
+        return data
+
+    return result
+
+
+def _extract_bot_history_trades(result: Any) -> list[dict[str, Any]]:
+    """Extract trade rows from the nested bot history response."""
+    current = result
+    for _ in range(8):
+        if isinstance(current, list):
+            return [item for item in current if isinstance(item, dict)]
+
+        if not isinstance(current, dict):
+            return []
+
+        for key in ("trades", "history", "results", "rows"):
+            value = current.get(key)
+            if isinstance(value, list):
+                return [item for item in value if isinstance(item, dict)]
+
+        for key in ("response", "data", "result"):
+            value = current.get(key)
+            if isinstance(value, (dict, list)):
+                current = value
+                break
+        else:
+            return []
+
+    return []
+
+
+def _sort_bot_history_trades(trades: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Sort trades newest-first before pagination."""
+    return sorted(
+        trades,
+        key=lambda item: (
+            int(item.get("trade_timestamp", 0) or 0),
+            str(item.get("trade_id", "")),
+        ),
+        reverse=True,
+    )
+
+
+def _normalize_bot_history_trade(item: dict[str, Any]) -> BotTradeHistoryItem:
+    """Normalize a history row into a stable response model."""
+    return BotTradeHistoryItem(
+        market=str(item.get("market", "")),
+        trade_id=str(item.get("trade_id", "")),
+        price=str(item.get("price", "")),
+        quantity=str(item.get("quantity", "")),
+        symbol=str(item.get("symbol", "")),
+        trade_timestamp=int(item.get("trade_timestamp", 0) or 0),
+        trade_type=str(item.get("trade_type", "")),
+        base_asset=str(item.get("base_asset", "")),
+        quote_asset=str(item.get("quote_asset", "")),
+        raw_json=item.get("raw_json", {}) if isinstance(item.get("raw_json", {}), dict) else {},
+    )
 
 
 @router.get("/servers/{name}/bots", response_model=BotsPageResponse)
@@ -262,25 +345,109 @@ async def get_bot(name: str, bot_id: str, user: WebUser = Depends(get_current_us
     if not isinstance(result, dict):
         raise HTTPException(status_code=404, detail="Bot not found")
 
-    bot = _parse_bot(result)
+    bot_payload = _unwrap_bot_detail(result)
+    bot = _parse_bot(bot_payload, fallback_id=bot_id)
 
     config: dict[str, Any] = {}
-    try:
-        config = await client.bot_orchestration.get_bot_config(bot_id)
-        if not isinstance(config, dict):
-            config = {}
-    except Exception:
-        pass
+    raw_config = bot_payload.get("config")
+    if isinstance(raw_config, dict):
+        config = raw_config
+    else:
+        try:
+            current_configs = await client.controllers.get_bot_controller_configs(bot_id)
+            if isinstance(current_configs, list) and current_configs:
+                if len(current_configs) == 1 and isinstance(current_configs[0], dict):
+                    config = current_configs[0]
+                else:
+                    config_by_controller: dict[str, Any] = {}
+                    for idx, ctrl_config in enumerate(current_configs):
+                        if not isinstance(ctrl_config, dict):
+                            continue
+                        config_key = str(
+                            ctrl_config.get("id")
+                            or ctrl_config.get("controller_id")
+                            or ctrl_config.get("controller_name")
+                            or idx
+                        )
+                        config_by_controller[config_key] = ctrl_config
+                    if len(config_by_controller) == 1:
+                        config = next(iter(config_by_controller.values()))
+                    elif config_by_controller:
+                        config = config_by_controller
+        except Exception as e:
+            logger.warning(
+                "Failed to fetch controller configs for '%s': %s: %s",
+                bot_id,
+                type(e).__name__,
+                e,
+            )
 
     performance: dict[str, Any] = {}
-    try:
-        perf = await client.bot_orchestration.get_bot_performance(bot_id)
-        if isinstance(perf, dict):
-            performance = perf
-    except Exception:
-        pass
+    raw_performance = bot_payload.get("performance")
+    if isinstance(raw_performance, dict):
+        performance = raw_performance
+    else:
+        controllers = bot_payload.get("controllers", [])
+        if isinstance(controllers, list):
+            perf_by_controller: dict[str, Any] = {}
+            for ctrl in controllers:
+                if not isinstance(ctrl, dict):
+                    continue
+                ctrl_name = str(ctrl.get("controller_name") or ctrl.get("id") or "")
+                ctrl_perf = ctrl.get("performance")
+                if ctrl_name and isinstance(ctrl_perf, dict):
+                    perf_by_controller[ctrl_name] = ctrl_perf
+            if len(perf_by_controller) == 1:
+                performance = next(iter(perf_by_controller.values()))
+            elif perf_by_controller:
+                performance = perf_by_controller
 
     return BotDetailResponse(bot=bot, config=config, performance=performance)
+
+
+@router.get("/servers/{name}/bots/{bot_id}/history", response_model=BotTradeHistoryResponse)
+async def get_bot_history(
+    name: str,
+    bot_id: str,
+    user: WebUser = Depends(get_current_user),
+    days: int = 0,
+    limit: int = 50,
+    offset: int = 0,
+    verbose: bool = True,
+    timeout: int = 60,
+):
+    cm = get_config_manager()
+    if not cm.has_server_access(user.id, name):
+        raise HTTPException(status_code=403, detail="No access")
+
+    client = await cm.get_client(name)
+
+    try:
+        history_result = await client.bot_orchestration._get(
+            f"/bot-orchestration/{bot_id}/history",
+            params={
+                "days": days,
+                "verbose": "true" if verbose else "false",
+                "timeout": timeout,
+            },
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+    trades = _sort_bot_history_trades(_extract_bot_history_trades(history_result))
+    total_count = len(trades)
+    paginated = trades[offset : offset + limit]
+
+    return BotTradeHistoryResponse(
+        bot_name=bot_id,
+        trades=[_normalize_bot_history_trade(trade) for trade in paginated],
+        total_count=total_count,
+        limit=limit,
+        offset=offset,
+        has_more=offset + limit < total_count,
+        days=days,
+        verbose=verbose,
+    )
 
 
 @router.get(

@@ -96,6 +96,30 @@ class BotDetailResponse(BaseModel):
     performance: dict[str, Any] = {}
 
 
+class BotTradeHistoryItem(BaseModel):
+    market: str = ""
+    trade_id: str = ""
+    price: str = ""
+    quantity: str = ""
+    symbol: str = ""
+    trade_timestamp: int = 0
+    trade_type: str = ""
+    base_asset: str = ""
+    quote_asset: str = ""
+    raw_json: dict[str, Any] = {}
+
+
+class BotTradeHistoryResponse(BaseModel):
+    bot_name: str
+    trades: list[BotTradeHistoryItem] = []
+    total_count: int = 0
+    limit: int = 50
+    offset: int = 0
+    has_more: bool = False
+    days: int = 0
+    verbose: bool = True
+
+
 class ControllerInfo(BaseModel):
     controller_name: str
     bot_name: str

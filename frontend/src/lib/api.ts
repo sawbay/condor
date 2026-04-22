@@ -76,6 +76,30 @@ export interface BotDetail {
   performance: Record<string, unknown>;
 }
 
+export interface BotTradeHistoryItem {
+  market: string;
+  trade_id: string;
+  price: string;
+  quantity: string;
+  symbol: string;
+  trade_timestamp: number;
+  trade_type: string;
+  base_asset: string;
+  quote_asset: string;
+  raw_json: Record<string, unknown>;
+}
+
+export interface BotTradeHistoryResponse {
+  bot_name: string;
+  trades: BotTradeHistoryItem[];
+  total_count: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
+  days: number;
+  verbose: boolean;
+}
+
 export interface ControllerInfo {
   controller_name: string;
   bot_name: string;
@@ -393,6 +417,22 @@ export const api = {
 
   getBot: (server: string, botId: string) =>
     apiFetch<BotDetail>(`/api/v1/servers/${server}/bots/${botId}`),
+
+  getBotHistory: (
+    server: string,
+    botId: string,
+    params?: { limit?: number; offset?: number; days?: number; verbose?: boolean; timeout?: number },
+  ) => {
+    const qs = new URLSearchParams();
+    qs.set("days", String(params?.days ?? 0));
+    qs.set("verbose", String(params?.verbose ?? true));
+    qs.set("timeout", String(params?.timeout ?? 60));
+    qs.set("limit", String(params?.limit ?? 50));
+    qs.set("offset", String(params?.offset ?? 0));
+    return apiFetch<BotTradeHistoryResponse>(
+      `/api/v1/servers/${server}/bots/${botId}/history?${qs.toString()}`,
+    );
+  },
 
   getAvailableConfigs: (server: string) =>
     apiFetch<AvailableControllersResponse>(
