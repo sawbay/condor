@@ -144,17 +144,35 @@ def _sort_bot_history_trades(trades: list[dict[str, Any]]) -> list[dict[str, Any
 
 def _normalize_bot_history_trade(item: dict[str, Any]) -> BotTradeHistoryItem:
     """Normalize a history row into a stable response model."""
+    raw_json = item.get("raw_json", {})
+    if not isinstance(raw_json, dict):
+        raw_json = {}
+
+    fee_value = (
+        item.get("trade_fee_in_quote")
+        or item.get("fee_in_quote")
+        or item.get("fee_quote")
+        or item.get("fees_quote")
+        or raw_json.get("trade_fee_in_quote")
+        or raw_json.get("fee_in_quote")
+        or raw_json.get("fee_quote")
+        or raw_json.get("fees_quote")
+        or raw_json.get("fee")
+        or 0
+    )
+
     return BotTradeHistoryItem(
         market=str(item.get("market", "")),
         trade_id=str(item.get("trade_id", "")),
         price=str(item.get("price", "")),
         quantity=str(item.get("quantity", "")),
+        trade_fee_in_quote=float(fee_value or 0),
         symbol=str(item.get("symbol", "")),
         trade_timestamp=int(item.get("trade_timestamp", 0) or 0),
         trade_type=str(item.get("trade_type", "")),
         base_asset=str(item.get("base_asset", "")),
         quote_asset=str(item.get("quote_asset", "")),
-        raw_json=item.get("raw_json", {}) if isinstance(item.get("raw_json", {}), dict) else {},
+        raw_json=raw_json,
     )
 
 

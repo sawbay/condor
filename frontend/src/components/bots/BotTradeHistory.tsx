@@ -11,6 +11,17 @@ function formatTimestamp(value: number): string {
   return new Date(value).toLocaleString();
 }
 
+function formatQuote(value: number | null | undefined): string {
+  if (value == null || Number.isNaN(value)) return "—";
+  return value.toFixed(4);
+}
+
+function formatQuantity(value: string | null | undefined): string {
+  if (!value) return "—";
+  if (value.endsWith(".")) return `${value}0`;
+  return value;
+}
+
 export function BotTradeHistory({
   server,
   botId,
@@ -96,6 +107,7 @@ export function BotTradeHistory({
                 <th className="py-2 pr-4 font-medium">Side</th>
                 <th className="py-2 pr-4 font-medium">Price</th>
                 <th className="py-2 pr-4 font-medium">Qty</th>
+                <th className="py-2 pr-4 font-medium">Fee</th>
                 <th className="py-2 pr-4 font-medium">Trade ID</th>
               </tr>
             </thead>
@@ -112,7 +124,10 @@ export function BotTradeHistory({
                   <td className="py-2 pr-4">{trade.symbol}</td>
                   <td className="py-2 pr-4">{trade.trade_type}</td>
                   <td className="py-2 pr-4 font-mono">{trade.price}</td>
-                  <td className="py-2 pr-4 font-mono">{trade.quantity}</td>
+                  <td className="py-2 pr-4 font-mono">{formatQuantity(trade.quantity)}</td>
+                  <td className="py-2 pr-4 font-mono">
+                    {formatQuote(trade.trade_fee_in_quote)}
+                  </td>
                   <td className="py-2 pr-4 font-mono text-xs">{trade.trade_id}</td>
                 </tr>
               ))}

@@ -81,6 +81,7 @@ export interface BotTradeHistoryItem {
   trade_id: string;
   price: string;
   quantity: string;
+  trade_fee_in_quote: number;
   symbol: string;
   trade_timestamp: number;
   trade_type: string;

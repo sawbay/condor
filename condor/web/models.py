@@ -101,6 +101,7 @@ class BotTradeHistoryItem(BaseModel):
     trade_id: str = ""
     price: str = ""
     quantity: str = ""
+    trade_fee_in_quote: float = 0.0
     symbol: str = ""
     trade_timestamp: int = 0
     trade_type: str = ""
