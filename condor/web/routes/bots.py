@@ -176,6 +176,47 @@ def _normalize_bot_history_trade(item: dict[str, Any]) -> BotTradeHistoryItem:
     )
 
 
+def _format_bot_log_list(value: Any) -> list[dict[str, Any] | str]:
+    if isinstance(value, list):
+        return [item for item in value if isinstance(item, (dict, str))]
+    return []
+
+
+def _find_bot_info_by_name(result: Any, bot_name: str) -> dict[str, Any]:
+    """Find a single bot record in active-bot status payloads."""
+    if not bot_name:
+        return {}
+
+    if isinstance(result, dict):
+        data = result.get("data", result)
+        if isinstance(data, dict):
+            candidate = data.get(bot_name)
+            if isinstance(candidate, dict):
+                return candidate
+            for item in data.values():
+                if not isinstance(item, dict):
+                    continue
+                name = str(item.get("bot_name") or item.get("name") or item.get("id") or "")
+                if name == bot_name:
+                    return item
+        elif isinstance(data, list):
+            for item in data:
+                if not isinstance(item, dict):
+                    continue
+                name = str(item.get("bot_name") or item.get("name") or item.get("id") or "")
+                if name == bot_name:
+                    return item
+    elif isinstance(result, list):
+        for item in result:
+            if not isinstance(item, dict):
+                continue
+            name = str(item.get("bot_name") or item.get("name") or item.get("id") or "")
+            if name == bot_name:
+                return item
+
+    return {}
+
+
 @router.get("/servers/{name}/bots", response_model=BotsPageResponse)
 async def list_bots(name: str, user: WebUser = Depends(get_current_user)):
     cm = get_config_manager()
@@ -430,7 +471,23 @@ async def get_bot(name: str, bot_id: str, user: WebUser = Depends(get_current_us
             elif perf_by_controller:
                 performance = perf_by_controller
 
-    return BotDetailResponse(bot=bot, config=config, performance=performance)
+    general_logs: list[dict[str, Any] | str] = []
+    error_logs: list[dict[str, Any] | str] = []
+    try:
+        active_result = await client.bot_orchestration.get_active_bots_status()
+        active_bot = _find_bot_info_by_name(active_result, bot.name or bot_id)
+        general_logs = _format_bot_log_list(active_bot.get("general_logs"))
+        error_logs = _format_bot_log_list(active_bot.get("error_logs"))
+    except Exception as e:
+        logger.warning("Failed to fetch active bot logs for '%s': %s: %s", bot_id, type(e).__name__, e)
+
+    return BotDetailResponse(
+        bot=bot,
+        config=config,
+        performance=performance,
+        general_logs=general_logs,
+        error_logs=error_logs,
+    )
 
 
 @router.get("/servers/{name}/bots/{bot_id}/history", response_model=BotTradeHistoryResponse)

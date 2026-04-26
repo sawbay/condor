@@ -94,6 +94,8 @@ class BotDetailResponse(BaseModel):
     bot: BotInfo
     config: dict[str, Any] = {}
     performance: dict[str, Any] = {}
+    general_logs: list[dict[str, Any] | str] = []
+    error_logs: list[dict[str, Any] | str] = []
 
 
 class BotTradeHistoryItem(BaseModel):

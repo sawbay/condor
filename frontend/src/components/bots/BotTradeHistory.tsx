@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { api } from "@/lib/api";
@@ -30,12 +30,30 @@ export function BotTradeHistory({
   botId: string;
 }) {
   const [page, setPage] = useState(0);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [now, setNow] = useState(Date.now());
+  const [refreshAnchor, setRefreshAnchor] = useState<number | null>(null);
+  const refreshIntervalMs = 10000;
 
   useEffect(() => {
     setPage(0);
   }, [botId, server]);
 
-  const { data, isLoading, error } = useQuery({
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [autoRefresh]);
+
+  useEffect(() => {
+    if (autoRefresh) {
+      setRefreshAnchor(Date.now());
+      return;
+    }
+    setRefreshAnchor(null);
+  }, [autoRefresh]);
+
+  const { data, isLoading, isFetching, error, refetch, dataUpdatedAt } = useQuery({
     queryKey: ["bot-history", server, botId, page],
     queryFn: () =>
       api.getBotHistory(server, botId, {
@@ -44,9 +62,9 @@ export function BotTradeHistory({
         days: 0,
         verbose: true,
         timeout: 60,
-      }),
+    }),
     enabled: !!server && !!botId,
-    refetchInterval: 10000,
+    refetchInterval: autoRefresh ? 10000 : false,
     placeholderData: keepPreviousData,
   });
 
@@ -74,13 +92,53 @@ export function BotTradeHistory({
     }
   }, [page, totalPages]);
 
+  useEffect(() => {
+    if (autoRefresh && dataUpdatedAt) {
+      setRefreshAnchor(dataUpdatedAt);
+    }
+  }, [autoRefresh, dataUpdatedAt]);
+
+  const countdownSeconds =
+    autoRefresh && refreshAnchor
+      ? Math.max(0, Math.ceil((refreshIntervalMs - (now - refreshAnchor)) / 1000))
+      : null;
+
   return (
     <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-      <div className="mb-3">
+      <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <h3 className="font-medium text-[var(--color-text-muted)]">Trade History</h3>
+          <p className="text-xs text-[var(--color-text-muted)]">{totalCount} trades total</p>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-xs text-[var(--color-text)] hover:bg-[var(--color-surface)]"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Refresh trades
+            </button>
+            <button
+              type="button"
+              onClick={() => setAutoRefresh((value) => !value)}
+              className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs ${
+                autoRefresh
+                  ? "border-[var(--color-green)]/40 bg-[var(--color-green)]/10 text-[var(--color-green)]"
+                  : "border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface)]"
+              }`}
+            >
+              Auto
+              <span className="text-[10px] opacity-75">
+                {autoRefresh ? `${countdownSeconds ?? 0}s` : "off"}
+              </span>
+            </button>
+          </div>
           <p className="text-xs text-[var(--color-text-muted)]">
-            {totalCount} trades total
+            {dataUpdatedAt ? `updated ${new Date(dataUpdatedAt).toLocaleTimeString()}` : ""}
+            {dataUpdatedAt && isFetching ? " · " : ""}
+            {isFetching ? "refreshing" : ""}
           </p>
         </div>
       </div>

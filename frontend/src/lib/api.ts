@@ -74,6 +74,8 @@ export interface BotDetail {
   bot: BotInfo;
   config: Record<string, unknown>;
   performance: Record<string, unknown>;
+  general_logs: Array<string | Record<string, unknown>>;
+  error_logs: Array<string | Record<string, unknown>>;
 }
 
 export interface BotTradeHistoryItem {
