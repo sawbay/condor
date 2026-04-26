@@ -128,7 +128,11 @@ async def get_bot_logs(
 async def manage_bot_execution(
     client: Any,
     bot_name: str,
-    action: Literal["stop_bot", "stop_controllers", "start_controllers"],
+    action: Literal[
+        "stop_bot",
+        "stop_controllers",
+        "start_controllers",
+    ],
     controller_names: list[str] | None = None,
 ) -> dict[str, Any]:
     """

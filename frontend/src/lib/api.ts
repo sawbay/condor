@@ -593,6 +593,18 @@ export const api = {
       { method: "POST" },
     ),
 
+  startBotControllers: (server: string, botName: string) =>
+    apiFetch<Record<string, unknown>>(
+      `/api/v1/servers/${server}/bots/${encodeURIComponent(botName)}/controllers/start`,
+      { method: "POST" },
+    ),
+
+  stopBotControllers: (server: string, botName: string) =>
+    apiFetch<Record<string, unknown>>(
+      `/api/v1/servers/${server}/bots/${encodeURIComponent(botName)}/controllers/stop`,
+      { method: "POST" },
+    ),
+
   getExecutors: (
     server: string,
     params?: { executor_type?: string; trading_pair?: string; status?: string; controller_id?: string; limit?: number },

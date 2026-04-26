@@ -561,7 +561,16 @@ async def manage_controllers(
 @mcp.tool()
 @handle_errors("manage bots")
 async def manage_bots(
-        action: Literal["deploy", "status", "logs", "stop_bot", "stop_controllers", "start_controllers", "get_config", "update_config"],
+        action: Literal[
+            "deploy",
+            "status",
+            "logs",
+            "stop_bot",
+            "stop_controllers",
+            "start_controllers",
+            "get_config",
+            "update_config",
+        ],
         bot_name: str | None = None,
         controllers_config: list[str] | None = None,
         account_name: str | None = "master_account",
@@ -594,7 +603,8 @@ async def manage_bots(
 
     Args:
         action: Action to perform on bots.
-        bot_name: Name of the bot (required for deploy, logs, stop_bot, stop/start_controllers, get_config, update_config).
+        bot_name: Name of the bot (required for deploy, logs, stop_bot, stop/start_controllers,
+            get_config, update_config).
         controllers_config: List of controller config names (required for deploy).
         account_name: Account name for deployment (default: master_account).
         max_global_drawdown_quote: Maximum global drawdown in quote currency (deploy only).
@@ -654,9 +664,20 @@ async def manage_bots(
             f"{result['logs_table']}"
         )
 
-    elif action in ("stop_bot", "stop_controllers", "start_controllers"):
+    elif action in (
+        "stop_bot",
+        "stop_controllers",
+        "start_controllers",
+    ):
         if not bot_name:
             return f"Error: 'bot_name' is required for {action} action"
+        if action in ("stop_controllers", "start_controllers"):
+            bot_status = await client.bot_orchestration.get_bot_status(bot_name)
+            status_payload = bot_status.get("data", bot_status) if isinstance(bot_status, dict) else {}
+            status = str(status_payload.get("status") or "").strip().lower() if isinstance(status_payload, dict) else ""
+            is_running = status == "running" or bool(status_payload.get("is_running")) if isinstance(status_payload, dict) else False
+            if not is_running:
+                return f"Error: '{bot_name}' is not running"
         result = await bot_management_tools.manage_bot_execution(
             client=client,
             bot_name=bot_name,

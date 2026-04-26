@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Circle, RefreshCw } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Circle, Loader2, Play, RefreshCw, Square } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
@@ -115,6 +115,7 @@ function parseLogEntry(log: string | Record<string, unknown>): LogEntry {
 export function BotDetail() {
   const { id } = useParams<{ id: string }>();
   const { server } = useServer();
+  const queryClient = useQueryClient();
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [now, setNow] = useState(Date.now());
   const logsScrollRef = useRef<HTMLDivElement | null>(null);
@@ -154,6 +155,26 @@ export function BotDetail() {
     el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [dataUpdatedAt, data?.error_logs.length, data?.general_logs.length]);
 
+  const invalidateBotData = () => {
+    void queryClient.invalidateQueries({ queryKey: ["bot", server, id] });
+    void queryClient.invalidateQueries({ queryKey: ["bots", server] });
+  };
+
+  const stopBotMutation = useMutation({
+    mutationFn: () => api.stopBot(server!, id!),
+    onSuccess: invalidateBotData,
+  });
+
+  const stopControllersMutation = useMutation({
+    mutationFn: () => api.stopBotControllers(server!, id!),
+    onSuccess: invalidateBotData,
+  });
+
+  const startControllersMutation = useMutation({
+    mutationFn: () => api.startBotControllers(server!, id!),
+    onSuccess: invalidateBotData,
+  });
+
   if (!server || !id) return null;
   if (isLoading) return <p className="text-[var(--color-text-muted)]">Loading...</p>;
   if (error) {
@@ -178,6 +199,7 @@ export function BotDetail() {
     bot.status === "running"
       ? "text-[var(--color-green)]"
       : "text-[var(--color-red)]";
+
   const parsedLogs = [
     ...error_logs.map((log) => ({ ...parseLogEntry(log), isError: true })),
     ...general_logs.map((log) => parseLogEntry(log)),
@@ -203,6 +225,51 @@ export function BotDetail() {
           <Circle className="h-2 w-2 fill-current" />
           {bot.status}
         </span>
+      </div>
+
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => stopBotMutation.mutate()}
+          disabled={bot.status !== "running" || stopBotMutation.isPending}
+          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-red)]/35 bg-[var(--color-red)]/10 px-3 py-2 text-sm font-medium text-[var(--color-red)] transition-colors hover:bg-[var(--color-red)]/15 disabled:cursor-not-allowed disabled:opacity-40"
+          title="Stop the bot and archive it"
+        >
+          {stopBotMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
+          Stop
+        </button>
+        {bot.status === "running" && (
+          <>
+            <button
+              type="button"
+              onClick={() => stopControllersMutation.mutate()}
+              disabled={stopControllersMutation.isPending}
+              className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-red)]/35 bg-[var(--color-red)]/10 px-3 py-2 text-sm font-medium text-[var(--color-red)] transition-colors hover:bg-[var(--color-red)]/15 disabled:cursor-not-allowed disabled:opacity-40"
+              title="Stop controllers inside this running bot"
+            >
+              {stopControllersMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Square className="h-4 w-4" />
+              )}
+              Stop controllers
+            </button>
+            <button
+              type="button"
+              onClick={() => startControllersMutation.mutate()}
+              disabled={startControllersMutation.isPending}
+              className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-green)]/35 bg-[var(--color-green)]/10 px-3 py-2 text-sm font-medium text-[var(--color-green)] transition-colors hover:bg-[var(--color-green)]/15 disabled:cursor-not-allowed disabled:opacity-40"
+              title="Resume controllers inside this running bot"
+            >
+              {startControllersMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Play className="h-4 w-4" />
+              )}
+              Start controllers
+            </button>
+          </>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
