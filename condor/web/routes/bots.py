@@ -142,31 +142,64 @@ def _sort_bot_history_trades(trades: list[dict[str, Any]]) -> list[dict[str, Any
     )
 
 
+def _as_float(value: Any) -> float | None:
+    if value is None or value == "":
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _extract_trade_fee_in_quote(item: dict[str, Any], raw_json: dict[str, Any]) -> float:
+    """Extract quote-denominated trade fees from bot history payloads."""
+    for key in (
+        "trade_fee_in_quote",
+        "fee_in_quote",
+        "fee_quote",
+        "fees_quote",
+    ):
+        fee = _as_float(item.get(key))
+        if fee is not None:
+            return fee
+
+    for key in ("trade_fee_in_quote", "fee_in_quote", "fee_quote", "fees_quote", "fee"):
+        fee = _as_float(raw_json.get(key))
+        if fee is not None:
+            return fee
+
+    trade_fee = raw_json.get("trade_fee")
+    if isinstance(trade_fee, dict):
+        flat_fees = trade_fee.get("flat_fees")
+        if isinstance(flat_fees, list):
+            total = 0.0
+            seen_amount = False
+            for fee_row in flat_fees:
+                if not isinstance(fee_row, dict):
+                    continue
+                amount = _as_float(fee_row.get("amount"))
+                if amount is None:
+                    continue
+                total += amount
+                seen_amount = True
+            if seen_amount:
+                return total
+
+    return 0.0
+
+
 def _normalize_bot_history_trade(item: dict[str, Any]) -> BotTradeHistoryItem:
     """Normalize a history row into a stable response model."""
     raw_json = item.get("raw_json", {})
     if not isinstance(raw_json, dict):
         raw_json = {}
 
-    fee_value = (
-        item.get("trade_fee_in_quote")
-        or item.get("fee_in_quote")
-        or item.get("fee_quote")
-        or item.get("fees_quote")
-        or raw_json.get("trade_fee_in_quote")
-        or raw_json.get("fee_in_quote")
-        or raw_json.get("fee_quote")
-        or raw_json.get("fees_quote")
-        or raw_json.get("fee")
-        or 0
-    )
-
     return BotTradeHistoryItem(
         market=str(item.get("market", "")),
         trade_id=str(item.get("trade_id", "")),
         price=str(item.get("price", "")),
         quantity=str(item.get("quantity", "")),
-        trade_fee_in_quote=float(fee_value or 0),
+        trade_fee_in_quote=_extract_trade_fee_in_quote(item, raw_json),
         symbol=str(item.get("symbol", "")),
         trade_timestamp=int(item.get("trade_timestamp", 0) or 0),
         trade_type=str(item.get("trade_type", "")),
