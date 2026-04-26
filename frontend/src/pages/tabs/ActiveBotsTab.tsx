@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import yaml from "js-yaml";
 
 import { HIDDEN_KEYS } from "@/components/bots/DeployBotDialog";
@@ -470,9 +471,13 @@ function BotsSection({ bots }: { bots: BotSummary[] }) {
           {bots.map((bot) => (
             <div key={bot.bot_name} className="flex items-center gap-4 px-4 py-2.5 text-sm">
               <StatusDot status={bot.status} />
-              <span className="font-medium truncate max-w-[250px]" title={bot.bot_name}>
+              <Link
+                to={`/bots/${bot.bot_name}`}
+                className="inline-block max-w-[250px] truncate font-medium hover:underline"
+                title={bot.bot_name}
+              >
                 {bot.bot_name}
-              </span>
+              </Link>
               <span className="text-[var(--color-text-muted)]">
                 {bot.num_controllers} controller{bot.num_controllers !== 1 ? "s" : ""}
               </span>
