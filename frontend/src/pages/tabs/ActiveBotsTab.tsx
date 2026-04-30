@@ -73,6 +73,10 @@ function parseSide(raw: string): string {
   return dot >= 0 ? raw.slice(dot + 1) : raw;
 }
 
+function isRunningStatus(status: string): boolean {
+  return status === "running";
+}
+
 // ── Sort types ──
 
 type SortKey =
@@ -568,10 +572,31 @@ export function ActiveBotsTab() {
 
   const controllers = data?.controllers ?? [];
   const bots = data?.bots ?? [];
+  const runningBots = useMemo(() => bots.filter((bot) => isRunningStatus(bot.status)), [bots]);
+  const runningBotNames = useMemo(() => new Set(runningBots.map((bot) => bot.bot_name)), [runningBots]);
+  const runningControllers = useMemo(
+    () =>
+      controllers.filter(
+        (controller) => runningBotNames.has(controller.bot_name) && isRunningStatus(controller.status),
+      ),
+    [controllers, runningBotNames],
+  );
+  const runningTotals = useMemo(
+    () =>
+      runningControllers.reduce(
+        (acc, controller) => {
+          acc.pnl += controller.global_pnl_quote;
+          acc.volume += controller.volume_traded;
+          return acc;
+        },
+        { pnl: 0, volume: 0 },
+      ),
+    [runningControllers],
+  );
 
   const sortedControllers = useMemo(
-    () => [...controllers].sort((a, b) => compareControllers(a, b, sortKey, sortDir)),
-    [controllers, sortKey, sortDir],
+    () => [...runningControllers].sort((a, b) => compareControllers(a, b, sortKey, sortDir)),
+    [runningControllers, sortKey, sortDir],
   );
 
   if (!server) {
@@ -587,11 +612,11 @@ export function ActiveBotsTab() {
 
   const serverOnline = data?.server_online !== false;
   const errorHint = data?.error_hint;
-  const totalPnl = data?.total_pnl ?? 0;
-  const totalVolume = data?.total_volume ?? 0;
-  const activeBots = bots.filter((b) => b.status === "running").length;
+  const totalPnl = runningTotals.pnl;
+  const totalVolume = runningTotals.volume;
+  const activeBots = runningBots.length;
 
-  const isEmpty = controllers.length === 0 && bots.length === 0;
+  const isEmpty = runningControllers.length === 0 && runningBots.length === 0;
 
   if (!serverOnline) {
     return (
@@ -642,7 +667,7 @@ export function ActiveBotsTab() {
       ) : (
         <>
           {/* Controllers table */}
-          {controllers.length > 0 && (
+          {runningControllers.length > 0 && (
             <div className="overflow-hidden rounded-lg border border-[var(--color-border)]">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -725,7 +750,7 @@ export function ActiveBotsTab() {
           )}
 
           {/* Bots collapsible section */}
-          {bots.length > 0 && <BotsSection bots={bots} server={server} />}
+          {runningBots.length > 0 && <BotsSection bots={runningBots} server={server} />}
         </>
       )}
 

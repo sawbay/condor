@@ -396,6 +396,20 @@ def _is_running_bot_payload(result: Any) -> bool:
     return False
 
 
+def _is_archived_bot_payload(payload: dict[str, Any]) -> bool:
+    """Return whether a bot/run payload represents an archived bot."""
+    deployment_status = str(payload.get("deployment_status") or "").strip().lower()
+    if deployment_status == "archived":
+        return True
+
+    for key in ("status", "run_status"):
+        status = str(payload.get(key) or "").strip().lower()
+        if status == "archived":
+            return True
+
+    return False
+
+
 async def _get_bot_controller_names(client: Any, bot_name: str) -> list[str]:
     """Collect live controller identifiers for a bot."""
     configs = await client.controllers.get_bot_controller_configs(bot_name)
@@ -448,7 +462,11 @@ async def list_bots(name: str, user: WebUser = Depends(get_current_user)):
     except Exception:
         client = None
 
-    bots_list = _extract_bots_list(result)
+    bots_list = [
+        bot_data
+        for bot_data in _extract_bots_list(result)
+        if not _is_archived_bot_payload(bot_data)
+    ]
     logger.info("Server '%s': found %d bot(s)", name, len(bots_list))
 
     # Pre-fetch controller configs keyed by controller id AND controller_name
@@ -605,13 +623,13 @@ async def list_bots(name: str, user: WebUser = Depends(get_current_user)):
     for bot_name, run in bot_run_records.items():
         if bot_name in active_bot_names:
             continue
+        if _is_archived_bot_payload(run):
+            continue
         run_status = str(run.get("run_status") or run.get("status") or "stopped").lower()
-        deployment_status = str(run.get("deployment_status") or "").lower()
-        status = "archived" if deployment_status == "archived" else run_status
         bots.append(
             BotSummary(
                 bot_name=bot_name,
-                status=status,
+                status=run_status,
                 num_controllers=0,
                 error_count=1 if run.get("error_message") else 0,
                 deployed_at=bot_runs.get(bot_name),
