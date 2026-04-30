@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import logging
+import os
+import time
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -28,6 +30,15 @@ from condor.web.models import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["bots"])
+
+
+def _extract_bot_name(db_path: str) -> str:
+    name = os.path.basename(db_path)
+    if name.endswith(".sqlite"):
+        name = name[:-7]
+    elif name.endswith(".db"):
+        name = name[:-3]
+    return name
 
 
 def _parse_bot(bot: dict, fallback_id: str = "") -> BotInfo:
@@ -130,16 +141,60 @@ def _extract_bot_history_trades(result: Any) -> list[dict[str, Any]]:
     return []
 
 
+def _trade_timestamp_seconds(item: dict[str, Any]) -> int:
+    for key in ("trade_timestamp", "timestamp"):
+        value = item.get(key)
+        if value is None or value == "":
+            continue
+        if isinstance(value, str):
+            try:
+                parsed = time.strptime(value[:19], "%Y-%m-%dT%H:%M:%S")
+                return int(time.mktime(parsed))
+            except ValueError:
+                try:
+                    numeric = float(value)
+                except ValueError:
+                    continue
+            else:
+                continue
+        else:
+            try:
+                numeric = float(value)
+            except (TypeError, ValueError):
+                continue
+
+        if numeric > 1_000_000_000_000:
+            return int(numeric / 1000)
+        return int(numeric)
+
+    return 0
+
+
 def _sort_bot_history_trades(trades: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Sort trades newest-first before pagination."""
     return sorted(
         trades,
         key=lambda item: (
-            int(item.get("trade_timestamp", 0) or 0),
-            str(item.get("trade_id", "")),
+            _trade_timestamp_seconds(item),
+            str(item.get("trade_id") or item.get("exchange_trade_id") or ""),
         ),
         reverse=True,
     )
+
+
+def _filter_bot_history_trades_by_days(
+    trades: list[dict[str, Any]], days: int
+) -> list[dict[str, Any]]:
+    """Optionally limit history rows to the requested number of recent days."""
+    if days <= 0:
+        return trades
+
+    cutoff = int(time.time()) - (days * 86400)
+    return [
+        trade
+        for trade in trades
+        if _trade_timestamp_seconds(trade) >= cutoff
+    ]
 
 
 def _as_float(value: Any) -> float | None:
@@ -194,14 +249,17 @@ def _normalize_bot_history_trade(item: dict[str, Any]) -> BotTradeHistoryItem:
     if not isinstance(raw_json, dict):
         raw_json = {}
 
+    raw_json = {**item, **raw_json}
+    timestamp = _trade_timestamp_seconds(item)
+
     return BotTradeHistoryItem(
-        market=str(item.get("market", "")),
-        trade_id=str(item.get("trade_id", "")),
+        market=str(item.get("market") or item.get("connector_name") or ""),
+        trade_id=str(item.get("trade_id") or item.get("exchange_trade_id") or ""),
         price=str(item.get("price", "")),
-        quantity=str(item.get("quantity", "")),
+        quantity=str(item.get("quantity") or item.get("amount") or ""),
         trade_fee_in_quote=_extract_trade_fee_in_quote(item, raw_json),
-        symbol=str(item.get("symbol", "")),
-        trade_timestamp=int(item.get("trade_timestamp", 0) or 0),
+        symbol=str(item.get("symbol") or item.get("trading_pair") or ""),
+        trade_timestamp=timestamp,
         trade_type=str(item.get("trade_type", "")),
         base_asset=str(item.get("base_asset", "")),
         quote_asset=str(item.get("quote_asset", "")),
@@ -248,6 +306,77 @@ def _find_bot_info_by_name(result: Any, bot_name: str) -> dict[str, Any]:
                 return item
 
     return {}
+
+
+async def _find_archived_db_path(client: Any, bot_id: str) -> str | None:
+    """Find an archived database path that matches a bot name or id."""
+    try:
+        databases = await client.archived_bots.list_databases()
+    except Exception as e:
+        logger.warning("Failed to list archived databases for '%s': %s", bot_id, e)
+        return None
+
+    if not isinstance(databases, list):
+        return None
+
+    candidates: list[str] = []
+    for db in databases:
+        if isinstance(db, str):
+            candidates.append(db)
+        elif isinstance(db, dict):
+            path = db.get("db_path") or db.get("path")
+            if path:
+                candidates.append(str(path))
+
+    for db_path in candidates:
+        base_name = _extract_bot_name(db_path)
+        if bot_id == db_path or bot_id == base_name:
+            return db_path
+
+    for db_path in candidates:
+        try:
+            summary = await client.archived_bots.get_database_summary(db_path)
+        except Exception:
+            continue
+        if not isinstance(summary, dict):
+            continue
+        summary_name = str(summary.get("bot_name") or _extract_bot_name(db_path))
+        if summary_name == bot_id:
+            return db_path
+
+    return None
+
+
+async def _fetch_archived_bot_history(client: Any, bot_id: str) -> list[dict[str, Any]]:
+    """Fetch and flatten the full trade history from an archived bot DB."""
+    db_path = await _find_archived_db_path(client, bot_id)
+    if not db_path:
+        return []
+
+    all_trades: list[dict[str, Any]] = []
+    offset = 0
+    limit = 500
+    while True:
+        try:
+            resp = await client.archived_bots.get_database_trades(
+                db_path, limit=limit, offset=offset
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to fetch archived trades for '%s' (%s): %s", bot_id, db_path, e
+            )
+            break
+        if not isinstance(resp, dict):
+            break
+        trades = resp.get("trades", [])
+        if not isinstance(trades, list) or not trades:
+            break
+        all_trades.extend([trade for trade in trades if isinstance(trade, dict)])
+        if len(trades) < limit:
+            break
+        offset += limit
+
+    return all_trades
 
 
 def _is_running_bot_payload(result: Any) -> bool:
@@ -344,6 +473,7 @@ async def list_bots(name: str, user: WebUser = Depends(get_current_user)):
 
     # Try to get bot runs for uptime/deployed_at info
     bot_runs: dict[str, str] = {}
+    bot_run_records: dict[str, dict[str, Any]] = {}
     try:
         if client is None:
             raise ValueError("No client")
@@ -353,6 +483,7 @@ async def list_bots(name: str, user: WebUser = Depends(get_current_user)):
             if isinstance(runs_data, dict):
                 for bot_name, run_info in runs_data.items():
                     if isinstance(run_info, dict):
+                        bot_run_records[bot_name] = run_info
                         deployed = run_info.get("deployed_at") or run_info.get("created_at")
                         if deployed:
                             bot_runs[bot_name] = str(deployed)
@@ -362,6 +493,8 @@ async def list_bots(name: str, user: WebUser = Depends(get_current_user)):
                 for run in runs_data:
                     if isinstance(run, dict):
                         bn = run.get("bot_name", "")
+                        if bn:
+                            bot_run_records[bn] = run
                         deployed = run.get("deployed_at") or run.get("created_at")
                         if bn and deployed:
                             bot_runs[bn] = str(deployed)
@@ -464,6 +597,27 @@ async def list_bots(name: str, user: WebUser = Depends(get_current_user)):
             )
         )
 
+    active_bot_names = {
+        str(bot_data.get("bot_name", ""))
+        for bot_data in bots_list
+        if bot_data.get("bot_name")
+    }
+    for bot_name, run in bot_run_records.items():
+        if bot_name in active_bot_names:
+            continue
+        run_status = str(run.get("run_status") or run.get("status") or "stopped").lower()
+        deployment_status = str(run.get("deployment_status") or "").lower()
+        status = "archived" if deployment_status == "archived" else run_status
+        bots.append(
+            BotSummary(
+                bot_name=bot_name,
+                status=status,
+                num_controllers=0,
+                error_count=1 if run.get("error_message") else 0,
+                deployed_at=bot_runs.get(bot_name),
+            )
+        )
+
     return BotsPageResponse(
         controllers=controllers,
         bots=bots,
@@ -546,11 +700,17 @@ async def get_bot(name: str, bot_id: str, user: WebUser = Depends(get_current_us
 
     general_logs: list[dict[str, Any] | str] = []
     error_logs: list[dict[str, Any] | str] = []
+    general_logs = _format_bot_log_list(bot_payload.get("general_logs"))
+    error_logs = _format_bot_log_list(bot_payload.get("error_logs"))
     try:
         active_result = await client.bot_orchestration.get_active_bots_status()
         active_bot = _find_bot_info_by_name(active_result, bot.name or bot_id)
-        general_logs = _format_bot_log_list(active_bot.get("general_logs"))
-        error_logs = _format_bot_log_list(active_bot.get("error_logs"))
+        active_general_logs = _format_bot_log_list(active_bot.get("general_logs"))
+        active_error_logs = _format_bot_log_list(active_bot.get("error_logs"))
+        if active_general_logs:
+            general_logs = active_general_logs
+        if active_error_logs:
+            error_logs = active_error_logs
     except Exception as e:
         logger.warning("Failed to fetch active bot logs for '%s': %s: %s", bot_id, type(e).__name__, e)
 
@@ -580,6 +740,7 @@ async def get_bot_history(
 
     client = await cm.get_client(name)
 
+    history_result: Any = None
     try:
         history_result = await client.bot_orchestration._get(
             f"/bot-orchestration/{bot_id}/history",
@@ -587,12 +748,30 @@ async def get_bot_history(
                 "days": days,
                 "verbose": "true" if verbose else "false",
                 "timeout": timeout,
+                "allow_unfiltered": "true",
             },
         )
     except Exception as e:
-        raise HTTPException(status_code=502, detail=str(e))
+        logger.warning("Live history fetch failed for '%s', trying archive: %s", bot_id, e)
+        try:
+            history_result = await _fetch_archived_bot_history(client, bot_id)
+        except Exception as archived_error:
+            raise HTTPException(status_code=502, detail=str(archived_error)) from e
 
-    trades = _sort_bot_history_trades(_extract_bot_history_trades(history_result))
+    trades = _sort_bot_history_trades(
+        _filter_bot_history_trades_by_days(
+            _extract_bot_history_trades(history_result), days
+        )
+    )
+    if not trades:
+        archived_trades = _sort_bot_history_trades(
+            _filter_bot_history_trades_by_days(
+                await _fetch_archived_bot_history(client, bot_id), days
+            )
+        )
+        if archived_trades:
+            trades = archived_trades
+
     total_count = len(trades)
     paginated = trades[offset : offset + limit]
 

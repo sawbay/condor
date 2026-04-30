@@ -8,7 +8,8 @@ const PAGE_SIZE = 20;
 
 function formatTimestamp(value: number): string {
   if (!value) return "unknown";
-  return new Date(value).toLocaleString();
+  const timestampMs = value < 1_000_000_000_000 ? value * 1000 : value;
+  return new Date(timestampMs).toLocaleString();
 }
 
 function formatQuote(value: number | null | undefined): string {

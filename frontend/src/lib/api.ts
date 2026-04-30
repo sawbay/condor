@@ -103,6 +103,20 @@ export interface BotTradeHistoryResponse {
   verbose: boolean;
 }
 
+function normalizeEpochMs(value: number): number {
+  return value > 0 && value < 1_000_000_000_000 ? value * 1000 : value;
+}
+
+function normalizeBotTradeHistory(response: BotTradeHistoryResponse): BotTradeHistoryResponse {
+  return {
+    ...response,
+    trades: response.trades.map((trade) => ({
+      ...trade,
+      trade_timestamp: normalizeEpochMs(trade.trade_timestamp),
+    })),
+  };
+}
+
 export interface ControllerInfo {
   controller_name: string;
   controller_id: string;
@@ -529,7 +543,7 @@ export const api = {
     qs.set("offset", String(params?.offset ?? 0));
     return apiFetch<BotTradeHistoryResponse>(
       `/api/v1/servers/${server}/bots/${botId}/history?${qs.toString()}`,
-    );
+    ).then(normalizeBotTradeHistory);
   },
 
   getAvailableConfigs: (server: string) =>
