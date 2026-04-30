@@ -74,7 +74,9 @@ function parseSide(raw: string): string {
 }
 
 function isRunningStatus(status: string): boolean {
-  return status === "running";
+  return status === "running" 
+    || status === "stopped" 
+    || status === "created";
 }
 
 // ── Sort types ──
