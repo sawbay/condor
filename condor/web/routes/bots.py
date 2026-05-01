@@ -236,6 +236,46 @@ def _normalize_bot_history_trade(item: dict[str, Any]) -> BotTradeHistoryItem:
     )
 
 
+def _is_running_bot_payload(result: Any) -> bool:
+    """Return whether a bot status payload indicates a running bot."""
+    payload = _unwrap_bot_detail(result)
+    if not isinstance(payload, dict):
+        return False
+
+    status = str(payload.get("status") or "").strip().lower()
+    if status:
+        return status == "running"
+
+    is_running = payload.get("is_running")
+    if is_running is not None:
+        return bool(is_running)
+
+    return False
+
+
+async def _get_bot_controller_names(client: Any, bot_name: str) -> list[str]:
+    """Collect live controller identifiers for a bot."""
+    configs = await client.controllers.get_bot_controller_configs(bot_name)
+    controller_names: list[str] = []
+
+    if not isinstance(configs, list):
+        return controller_names
+
+    for config in configs:
+        if not isinstance(config, dict):
+            continue
+        controller_name = str(
+            config.get("id")
+            or config.get("controller_id")
+            or config.get("controller_name")
+            or ""
+        ).strip()
+        if controller_name and controller_name not in controller_names:
+            controller_names.append(controller_name)
+
+    return controller_names
+
+
 @router.get("/servers/{name}/bots", response_model=BotsPageResponse)
 async def list_bots(name: str, user: WebUser = Depends(get_current_user)):
     cm = get_config_manager()
@@ -908,3 +948,73 @@ async def stop_bot_endpoint(
         raise HTTPException(status_code=502, detail=str(e))
 
     return result
+
+
+@router.post("/servers/{name}/bots/{bot_name}/controllers/start")
+async def start_bot_controllers_endpoint(
+    name: str, bot_name: str, user: WebUser = Depends(get_current_user)
+):
+    cm = get_config_manager()
+    if not cm.has_server_access(user.id, name):
+        raise HTTPException(status_code=403, detail="No access")
+
+    client = await cm.get_client(name)
+
+    from mcp_servers.hummingbot_api.tools.bot_management import manage_bot_execution
+
+    try:
+        bot_status = await client.bot_orchestration.get_bot_status(bot_name)
+        if not _is_running_bot_payload(bot_status):
+            raise HTTPException(status_code=409, detail=f"Bot '{bot_name}' is not running")
+
+        controller_names = await _get_bot_controller_names(client, bot_name)
+        if not controller_names:
+            raise HTTPException(status_code=404, detail=f"No controllers found for bot '{bot_name}'")
+
+        result = await manage_bot_execution(
+            client=client,
+            bot_name=bot_name,
+            action="start_controllers",
+            controller_names=controller_names,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+    return {**result, "controller_names": controller_names}
+
+
+@router.post("/servers/{name}/bots/{bot_name}/controllers/stop")
+async def stop_bot_controllers_endpoint(
+    name: str, bot_name: str, user: WebUser = Depends(get_current_user)
+):
+    cm = get_config_manager()
+    if not cm.has_server_access(user.id, name):
+        raise HTTPException(status_code=403, detail="No access")
+
+    client = await cm.get_client(name)
+
+    from mcp_servers.hummingbot_api.tools.bot_management import manage_bot_execution
+
+    try:
+        bot_status = await client.bot_orchestration.get_bot_status(bot_name)
+        if not _is_running_bot_payload(bot_status):
+            raise HTTPException(status_code=409, detail=f"Bot '{bot_name}' is not running")
+
+        controller_names = await _get_bot_controller_names(client, bot_name)
+        if not controller_names:
+            raise HTTPException(status_code=404, detail=f"No controllers found for bot '{bot_name}'")
+
+        result = await manage_bot_execution(
+            client=client,
+            bot_name=bot_name,
+            action="stop_controllers",
+            controller_names=controller_names,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+    return {**result, "controller_names": controller_names}
