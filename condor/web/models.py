@@ -98,6 +98,14 @@ class BotDetailResponse(BaseModel):
     error_logs: list[dict[str, Any] | str] = []
 
 
+class BotContainerStatusResponse(BaseModel):
+    name: str
+    status: str = "unknown"
+    is_running: bool = False
+    exists: bool = False
+    raw: dict[str, Any] = {}
+
+
 class BotTradeHistoryItem(BaseModel):
     market: str = ""
     trade_id: str = ""

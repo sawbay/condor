@@ -128,6 +128,17 @@ export function BotDetail() {
     enabled: !!server && !!id,
     refetchInterval: autoRefresh ? 10000 : false,
   });
+  const containerName = data?.bot.name ?? id;
+  const {
+    data: containerStatus,
+    isFetching: isFetchingContainer,
+    error: containerError,
+  } = useQuery({
+    queryKey: ["bot-container", server, containerName],
+    queryFn: () => api.getBotContainer(server!, containerName!),
+    enabled: !!server && !!containerName,
+    refetchInterval: autoRefresh ? 10000 : false,
+  });
 
   useEffect(() => {
     if (!autoRefresh) return;
@@ -157,21 +168,32 @@ export function BotDetail() {
 
   const invalidateBotData = () => {
     void queryClient.invalidateQueries({ queryKey: ["bot", server, id] });
+    void queryClient.invalidateQueries({ queryKey: ["bot-container", server, containerName] });
     void queryClient.invalidateQueries({ queryKey: ["bots", server] });
   };
 
   const stopBotMutation = useMutation({
-    mutationFn: () => api.stopBot(server!, id!),
+    mutationFn: () => api.stopBot(server!, containerName!),
+    onSuccess: invalidateBotData,
+  });
+
+  const startContainerMutation = useMutation({
+    mutationFn: () => api.startBotContainer(server!, containerName!),
+    onSuccess: invalidateBotData,
+  });
+
+  const stopContainerMutation = useMutation({
+    mutationFn: () => api.stopBotContainer(server!, containerName!),
     onSuccess: invalidateBotData,
   });
 
   const stopControllersMutation = useMutation({
-    mutationFn: () => api.stopBotControllers(server!, id!),
+    mutationFn: () => api.stopBotControllers(server!, containerName!),
     onSuccess: invalidateBotData,
   });
 
   const startControllersMutation = useMutation({
-    mutationFn: () => api.startBotControllers(server!, id!),
+    mutationFn: () => api.startBotControllers(server!, containerName!),
     onSuccess: invalidateBotData,
   });
 
@@ -199,6 +221,13 @@ export function BotDetail() {
     bot.status === "running"
       ? "text-[var(--color-green)]"
       : "text-[var(--color-red)]";
+  const containerStatusColor = containerStatus?.is_running
+    ? "text-[var(--color-green)]"
+    : containerStatus?.exists
+      ? "text-[var(--color-yellow)]"
+      : "text-[var(--color-red)]";
+  const isContainerRunning = Boolean(containerStatus?.is_running);
+  const isContainerActionPending = startContainerMutation.isPending || stopContainerMutation.isPending;
 
   const parsedLogs = [
     ...error_logs.map((log) => ({ ...parseLogEntry(log), isError: true })),
@@ -228,15 +257,42 @@ export function BotDetail() {
       </div>
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] px-3 py-2 text-sm ${containerStatusColor}`}
+          title={containerError instanceof Error ? containerError.message : "Docker container status"}
+        >
+          {isFetchingContainer ? <Loader2 className="h-4 w-4 animate-spin" /> : <Circle className="h-2 w-2 fill-current" />}
+          Container: {containerStatus?.status ?? "unknown"}
+        </span>
+        <button
+          type="button"
+          onClick={() => startContainerMutation.mutate()}
+          disabled={isContainerRunning || isContainerActionPending || !containerStatus?.exists}
+          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-green)]/35 bg-[var(--color-green)]/10 px-3 py-2 text-sm font-medium text-[var(--color-green)] transition-colors hover:bg-[var(--color-green)]/15 disabled:cursor-not-allowed disabled:opacity-40"
+          title="Start the Docker container for this bot"
+        >
+          {startContainerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+          Start container
+        </button>
+        <button
+          type="button"
+          onClick={() => stopContainerMutation.mutate()}
+          disabled={!isContainerRunning || isContainerActionPending}
+          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-red)]/35 bg-[var(--color-red)]/10 px-3 py-2 text-sm font-medium text-[var(--color-red)] transition-colors hover:bg-[var(--color-red)]/15 disabled:cursor-not-allowed disabled:opacity-40"
+          title="Stop the Docker container without archiving the bot"
+        >
+          {stopContainerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
+          Stop container
+        </button>
         <button
           type="button"
           onClick={() => stopBotMutation.mutate()}
           disabled={bot.status !== "running" || stopBotMutation.isPending}
           className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-red)]/35 bg-[var(--color-red)]/10 px-3 py-2 text-sm font-medium text-[var(--color-red)] transition-colors hover:bg-[var(--color-red)]/15 disabled:cursor-not-allowed disabled:opacity-40"
-          title="Stop the bot and archive it"
+          title="Stop, archive, and delete the entire bot"
         >
           {stopBotMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
-          Stop
+          Stop & archive bot
         </button>
         {bot.status === "running" && (
           <>

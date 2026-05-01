@@ -14,6 +14,7 @@ import yaml
 from condor.web.models import (
     AvailableControllersResponse,
     BotDetailResponse,
+    BotContainerStatusResponse,
     BotInfo,
     BotSummary,
     BotsPageResponse,
@@ -394,6 +395,47 @@ def _is_running_bot_payload(result: Any) -> bool:
         return bool(is_running)
 
     return False
+
+
+def _normalize_container_status(bot_name: str, result: Any) -> BotContainerStatusResponse:
+    """Normalize Docker router responses into a stable UI payload."""
+    raw = result if isinstance(result, dict) else {}
+    payload = raw
+    if isinstance(raw, dict):
+        for key in ("data", "container", "container_info", "result"):
+            value = raw.get(key)
+            if isinstance(value, dict):
+                payload = value
+                break
+
+    status_value = ""
+    if isinstance(payload, dict):
+        for key in ("status", "Status", "state", "State", "container_status"):
+            value = payload.get(key)
+            if isinstance(value, dict):
+                value = value.get("Status") or value.get("status") or value.get("state")
+            if value:
+                status_value = str(value)
+                break
+
+    normalized = status_value.strip().lower()
+    is_running = normalized in {"running", "up"} or normalized.startswith("up ")
+    exists = bool(payload) and normalized not in {
+        "error",
+        "not_found",
+        "not found",
+        "missing",
+    }
+    if not status_value:
+        status_value = "unknown" if exists else "not_found"
+
+    return BotContainerStatusResponse(
+        name=bot_name,
+        status=status_value,
+        is_running=is_running,
+        exists=exists,
+        raw=raw,
+    )
 
 
 def _is_archived_bot_payload(payload: dict[str, Any]) -> bool:
@@ -1139,6 +1181,67 @@ async def stop_bot_endpoint(
         raise HTTPException(status_code=502, detail=str(e))
 
     return result
+
+
+@router.get(
+    "/servers/{name}/bots/{bot_name}/container",
+    response_model=BotContainerStatusResponse,
+)
+async def get_bot_container_endpoint(
+    name: str, bot_name: str, user: WebUser = Depends(get_current_user)
+):
+    cm = get_config_manager()
+    if not cm.has_server_access(user.id, name):
+        raise HTTPException(status_code=403, detail="No access")
+
+    client = await cm.get_client(name)
+    try:
+        result = await client.docker.get_container_status(bot_name)
+    except Exception as e:
+        logger.warning("Failed to fetch container status for '%s': %s", bot_name, e)
+        return BotContainerStatusResponse(
+            name=bot_name,
+            status="not_found",
+            is_running=False,
+            exists=False,
+            raw={"error": str(e)},
+        )
+
+    return _normalize_container_status(bot_name, result)
+
+
+@router.post("/servers/{name}/bots/{bot_name}/container/start")
+async def start_bot_container_endpoint(
+    name: str, bot_name: str, user: WebUser = Depends(get_current_user)
+):
+    cm = get_config_manager()
+    if not cm.has_server_access(user.id, name):
+        raise HTTPException(status_code=403, detail="No access")
+
+    client = await cm.get_client(name)
+    try:
+        result = await client.docker.start_container(bot_name)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+    return {"action": "start_container", "bot_name": bot_name, "result": result}
+
+
+@router.post("/servers/{name}/bots/{bot_name}/container/stop")
+async def stop_bot_container_endpoint(
+    name: str, bot_name: str, user: WebUser = Depends(get_current_user)
+):
+    cm = get_config_manager()
+    if not cm.has_server_access(user.id, name):
+        raise HTTPException(status_code=403, detail="No access")
+
+    client = await cm.get_client(name)
+    try:
+        result = await client.docker.stop_container(bot_name)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+    return {"action": "stop_container", "bot_name": bot_name, "result": result}
 
 
 @router.post("/servers/{name}/bots/{bot_name}/controllers/start")

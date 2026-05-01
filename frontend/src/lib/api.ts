@@ -78,6 +78,14 @@ export interface BotDetail {
   error_logs: Array<string | Record<string, unknown>>;
 }
 
+export interface BotContainerStatus {
+  name: string;
+  status: string;
+  is_running: boolean;
+  exists: boolean;
+  raw: Record<string, unknown>;
+}
+
 export interface BotTradeHistoryItem {
   market: string;
   trade_id: string;
@@ -530,6 +538,11 @@ export const api = {
   getBot: (server: string, botId: string) =>
     apiFetch<BotDetail>(`/api/v1/servers/${server}/bots/${botId}`),
 
+  getBotContainer: (server: string, botName: string) =>
+    apiFetch<BotContainerStatus>(
+      `/api/v1/servers/${server}/bots/${encodeURIComponent(botName)}/container`,
+    ),
+
   getBotHistory: (
     server: string,
     botId: string,
@@ -604,6 +617,18 @@ export const api = {
   stopBot: (server: string, botName: string) =>
     apiFetch<Record<string, unknown>>(
       `/api/v1/servers/${server}/bots/${encodeURIComponent(botName)}/stop`,
+      { method: "POST" },
+    ),
+
+  startBotContainer: (server: string, botName: string) =>
+    apiFetch<Record<string, unknown>>(
+      `/api/v1/servers/${server}/bots/${encodeURIComponent(botName)}/container/start`,
+      { method: "POST" },
+    ),
+
+  stopBotContainer: (server: string, botName: string) =>
+    apiFetch<Record<string, unknown>>(
+      `/api/v1/servers/${server}/bots/${encodeURIComponent(botName)}/container/stop`,
       { method: "POST" },
     ),
 
