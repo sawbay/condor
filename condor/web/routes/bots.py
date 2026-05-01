@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
-import time
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -14,7 +12,6 @@ import yaml
 from condor.web.models import (
     AvailableControllersResponse,
     BotDetailResponse,
-    BotContainerStatusResponse,
     BotInfo,
     BotSummary,
     BotsPageResponse,
@@ -31,15 +28,6 @@ from condor.web.models import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["bots"])
-
-
-def _extract_bot_name(db_path: str) -> str:
-    name = os.path.basename(db_path)
-    if name.endswith(".sqlite"):
-        name = name[:-7]
-    elif name.endswith(".db"):
-        name = name[:-3]
-    return name
 
 
 def _parse_bot(bot: dict, fallback_id: str = "") -> BotInfo:
@@ -142,106 +130,16 @@ def _extract_bot_history_trades(result: Any) -> list[dict[str, Any]]:
     return []
 
 
-def _trade_timestamp_seconds(item: dict[str, Any]) -> int:
-    for key in ("trade_timestamp", "timestamp"):
-        value = item.get(key)
-        if value is None or value == "":
-            continue
-        if isinstance(value, str):
-            try:
-                parsed = time.strptime(value[:19], "%Y-%m-%dT%H:%M:%S")
-                return int(time.mktime(parsed))
-            except ValueError:
-                try:
-                    numeric = float(value)
-                except ValueError:
-                    continue
-            else:
-                continue
-        else:
-            try:
-                numeric = float(value)
-            except (TypeError, ValueError):
-                continue
-
-        if numeric > 1_000_000_000_000:
-            return int(numeric / 1000)
-        return int(numeric)
-
-    return 0
-
-
 def _sort_bot_history_trades(trades: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Sort trades newest-first before pagination."""
     return sorted(
         trades,
         key=lambda item: (
-            _trade_timestamp_seconds(item),
-            str(item.get("trade_id") or item.get("exchange_trade_id") or ""),
+            int(item.get("trade_timestamp", 0) or 0),
+            str(item.get("trade_id", "")),
         ),
         reverse=True,
     )
-
-
-def _filter_bot_history_trades_by_days(
-    trades: list[dict[str, Any]], days: int
-) -> list[dict[str, Any]]:
-    """Optionally limit history rows to the requested number of recent days."""
-    if days <= 0:
-        return trades
-
-    cutoff = int(time.time()) - (days * 86400)
-    return [
-        trade
-        for trade in trades
-        if _trade_timestamp_seconds(trade) >= cutoff
-    ]
-
-
-def _as_float(value: Any) -> float | None:
-    if value is None or value == "":
-        return None
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
-
-
-def _extract_trade_fee_in_quote(item: dict[str, Any], raw_json: dict[str, Any]) -> float:
-    """Extract quote-denominated trade fees from bot history payloads."""
-    for key in (
-        "trade_fee_in_quote",
-        "fee_in_quote",
-        "fee_quote",
-        "fees_quote",
-    ):
-        fee = _as_float(item.get(key))
-        if fee is not None:
-            return fee
-
-    for key in ("trade_fee_in_quote", "fee_in_quote", "fee_quote", "fees_quote", "fee"):
-        fee = _as_float(raw_json.get(key))
-        if fee is not None:
-            return fee
-
-    trade_fee = raw_json.get("trade_fee")
-    if isinstance(trade_fee, dict):
-        flat_fees = trade_fee.get("flat_fees")
-        if isinstance(flat_fees, list):
-            total = 0.0
-            seen_amount = False
-            for fee_row in flat_fees:
-                if not isinstance(fee_row, dict):
-                    continue
-                amount = _as_float(fee_row.get("amount"))
-                if amount is None:
-                    continue
-                total += amount
-                seen_amount = True
-            if seen_amount:
-                return total
-
-    return 0.0
 
 
 def _normalize_bot_history_trade(item: dict[str, Any]) -> BotTradeHistoryItem:
@@ -250,229 +148,32 @@ def _normalize_bot_history_trade(item: dict[str, Any]) -> BotTradeHistoryItem:
     if not isinstance(raw_json, dict):
         raw_json = {}
 
-    raw_json = {**item, **raw_json}
-    timestamp = _trade_timestamp_seconds(item)
+    fee_value = (
+        item.get("trade_fee_in_quote")
+        or item.get("fee_in_quote")
+        or item.get("fee_quote")
+        or item.get("fees_quote")
+        or raw_json.get("trade_fee_in_quote")
+        or raw_json.get("fee_in_quote")
+        or raw_json.get("fee_quote")
+        or raw_json.get("fees_quote")
+        or raw_json.get("fee")
+        or 0
+    )
 
     return BotTradeHistoryItem(
-        market=str(item.get("market") or item.get("connector_name") or ""),
-        trade_id=str(item.get("trade_id") or item.get("exchange_trade_id") or ""),
+        market=str(item.get("market", "")),
+        trade_id=str(item.get("trade_id", "")),
         price=str(item.get("price", "")),
-        quantity=str(item.get("quantity") or item.get("amount") or ""),
-        trade_fee_in_quote=_extract_trade_fee_in_quote(item, raw_json),
-        symbol=str(item.get("symbol") or item.get("trading_pair") or ""),
-        trade_timestamp=timestamp,
+        quantity=str(item.get("quantity", "")),
+        trade_fee_in_quote=float(fee_value or 0),
+        symbol=str(item.get("symbol", "")),
+        trade_timestamp=int(item.get("trade_timestamp", 0) or 0),
         trade_type=str(item.get("trade_type", "")),
         base_asset=str(item.get("base_asset", "")),
         quote_asset=str(item.get("quote_asset", "")),
         raw_json=raw_json,
     )
-
-
-def _format_bot_log_list(value: Any) -> list[dict[str, Any] | str]:
-    if isinstance(value, list):
-        return [item for item in value if isinstance(item, (dict, str))]
-    return []
-
-
-def _find_bot_info_by_name(result: Any, bot_name: str) -> dict[str, Any]:
-    """Find a single bot record in active-bot status payloads."""
-    if not bot_name:
-        return {}
-
-    if isinstance(result, dict):
-        data = result.get("data", result)
-        if isinstance(data, dict):
-            candidate = data.get(bot_name)
-            if isinstance(candidate, dict):
-                return candidate
-            for item in data.values():
-                if not isinstance(item, dict):
-                    continue
-                name = str(item.get("bot_name") or item.get("name") or item.get("id") or "")
-                if name == bot_name:
-                    return item
-        elif isinstance(data, list):
-            for item in data:
-                if not isinstance(item, dict):
-                    continue
-                name = str(item.get("bot_name") or item.get("name") or item.get("id") or "")
-                if name == bot_name:
-                    return item
-    elif isinstance(result, list):
-        for item in result:
-            if not isinstance(item, dict):
-                continue
-            name = str(item.get("bot_name") or item.get("name") or item.get("id") or "")
-            if name == bot_name:
-                return item
-
-    return {}
-
-
-async def _find_archived_db_path(client: Any, bot_id: str) -> str | None:
-    """Find an archived database path that matches a bot name or id."""
-    try:
-        databases = await client.archived_bots.list_databases()
-    except Exception as e:
-        logger.warning("Failed to list archived databases for '%s': %s", bot_id, e)
-        return None
-
-    if not isinstance(databases, list):
-        return None
-
-    candidates: list[str] = []
-    for db in databases:
-        if isinstance(db, str):
-            candidates.append(db)
-        elif isinstance(db, dict):
-            path = db.get("db_path") or db.get("path")
-            if path:
-                candidates.append(str(path))
-
-    for db_path in candidates:
-        base_name = _extract_bot_name(db_path)
-        if bot_id == db_path or bot_id == base_name:
-            return db_path
-
-    for db_path in candidates:
-        try:
-            summary = await client.archived_bots.get_database_summary(db_path)
-        except Exception:
-            continue
-        if not isinstance(summary, dict):
-            continue
-        summary_name = str(summary.get("bot_name") or _extract_bot_name(db_path))
-        if summary_name == bot_id:
-            return db_path
-
-    return None
-
-
-async def _fetch_archived_bot_history(client: Any, bot_id: str) -> list[dict[str, Any]]:
-    """Fetch and flatten the full trade history from an archived bot DB."""
-    db_path = await _find_archived_db_path(client, bot_id)
-    if not db_path:
-        return []
-
-    all_trades: list[dict[str, Any]] = []
-    offset = 0
-    limit = 500
-    while True:
-        try:
-            resp = await client.archived_bots.get_database_trades(
-                db_path, limit=limit, offset=offset
-            )
-        except Exception as e:
-            logger.warning(
-                "Failed to fetch archived trades for '%s' (%s): %s", bot_id, db_path, e
-            )
-            break
-        if not isinstance(resp, dict):
-            break
-        trades = resp.get("trades", [])
-        if not isinstance(trades, list) or not trades:
-            break
-        all_trades.extend([trade for trade in trades if isinstance(trade, dict)])
-        if len(trades) < limit:
-            break
-        offset += limit
-
-    return all_trades
-
-
-def _is_running_bot_payload(result: Any) -> bool:
-    """Return whether a bot status payload indicates a running bot."""
-    payload = _unwrap_bot_detail(result)
-    if not isinstance(payload, dict):
-        return False
-
-    status = str(payload.get("status") or "").strip().lower()
-    if status:
-        return status == "running"
-
-    is_running = payload.get("is_running")
-    if is_running is not None:
-        return bool(is_running)
-
-    return False
-
-
-def _normalize_container_status(bot_name: str, result: Any) -> BotContainerStatusResponse:
-    """Normalize Docker router responses into a stable UI payload."""
-    raw = result if isinstance(result, dict) else {}
-    payload = raw
-    if isinstance(raw, dict):
-        for key in ("data", "container", "container_info", "result"):
-            value = raw.get(key)
-            if isinstance(value, dict):
-                payload = value
-                break
-
-    status_value = ""
-    if isinstance(payload, dict):
-        for key in ("status", "Status", "state", "State", "container_status"):
-            value = payload.get(key)
-            if isinstance(value, dict):
-                value = value.get("Status") or value.get("status") or value.get("state")
-            if value:
-                status_value = str(value)
-                break
-
-    normalized = status_value.strip().lower()
-    is_running = normalized in {"running", "up"} or normalized.startswith("up ")
-    exists = bool(payload) and normalized not in {
-        "error",
-        "not_found",
-        "not found",
-        "missing",
-    }
-    if not status_value:
-        status_value = "unknown" if exists else "not_found"
-
-    return BotContainerStatusResponse(
-        name=bot_name,
-        status=status_value,
-        is_running=is_running,
-        exists=exists,
-        raw=raw,
-    )
-
-
-def _is_archived_bot_payload(payload: dict[str, Any]) -> bool:
-    """Return whether a bot/run payload represents an archived bot."""
-    deployment_status = str(payload.get("deployment_status") or "").strip().lower()
-    if deployment_status == "archived":
-        return True
-
-    for key in ("status", "run_status"):
-        status = str(payload.get(key) or "").strip().lower()
-        if status == "archived":
-            return True
-
-    return False
-
-
-async def _get_bot_controller_names(client: Any, bot_name: str) -> list[str]:
-    """Collect live controller identifiers for a bot."""
-    configs = await client.controllers.get_bot_controller_configs(bot_name)
-    controller_names: list[str] = []
-
-    if not isinstance(configs, list):
-        return controller_names
-
-    for config in configs:
-        if not isinstance(config, dict):
-            continue
-        controller_name = str(
-            config.get("id")
-            or config.get("controller_id")
-            or config.get("controller_name")
-            or ""
-        ).strip()
-        if controller_name and controller_name not in controller_names:
-            controller_names.append(controller_name)
-
-    return controller_names
 
 
 @router.get("/servers/{name}/bots", response_model=BotsPageResponse)
@@ -504,11 +205,7 @@ async def list_bots(name: str, user: WebUser = Depends(get_current_user)):
     except Exception:
         client = None
 
-    bots_list = [
-        bot_data
-        for bot_data in _extract_bots_list(result)
-        if not _is_archived_bot_payload(bot_data)
-    ]
+    bots_list = _extract_bots_list(result)
     logger.info("Server '%s': found %d bot(s)", name, len(bots_list))
 
     # Pre-fetch controller configs keyed by controller id AND controller_name
@@ -533,7 +230,6 @@ async def list_bots(name: str, user: WebUser = Depends(get_current_user)):
 
     # Try to get bot runs for uptime/deployed_at info
     bot_runs: dict[str, str] = {}
-    bot_run_records: dict[str, dict[str, Any]] = {}
     try:
         if client is None:
             raise ValueError("No client")
@@ -543,7 +239,6 @@ async def list_bots(name: str, user: WebUser = Depends(get_current_user)):
             if isinstance(runs_data, dict):
                 for bot_name, run_info in runs_data.items():
                     if isinstance(run_info, dict):
-                        bot_run_records[bot_name] = run_info
                         deployed = run_info.get("deployed_at") or run_info.get("created_at")
                         if deployed:
                             bot_runs[bot_name] = str(deployed)
@@ -553,8 +248,6 @@ async def list_bots(name: str, user: WebUser = Depends(get_current_user)):
                 for run in runs_data:
                     if isinstance(run, dict):
                         bn = run.get("bot_name", "")
-                        if bn:
-                            bot_run_records[bn] = run
                         deployed = run.get("deployed_at") or run.get("created_at")
                         if bn and deployed:
                             bot_runs[bn] = str(deployed)
@@ -657,27 +350,6 @@ async def list_bots(name: str, user: WebUser = Depends(get_current_user)):
             )
         )
 
-    active_bot_names = {
-        str(bot_data.get("bot_name", ""))
-        for bot_data in bots_list
-        if bot_data.get("bot_name")
-    }
-    for bot_name, run in bot_run_records.items():
-        if bot_name in active_bot_names:
-            continue
-        if _is_archived_bot_payload(run):
-            continue
-        run_status = str(run.get("run_status") or run.get("status") or "stopped").lower()
-        bots.append(
-            BotSummary(
-                bot_name=bot_name,
-                status=run_status,
-                num_controllers=0,
-                error_count=1 if run.get("error_message") else 0,
-                deployed_at=bot_runs.get(bot_name),
-            )
-        )
-
     return BotsPageResponse(
         controllers=controllers,
         bots=bots,
@@ -758,29 +430,7 @@ async def get_bot(name: str, bot_id: str, user: WebUser = Depends(get_current_us
             elif perf_by_controller:
                 performance = perf_by_controller
 
-    general_logs: list[dict[str, Any] | str] = []
-    error_logs: list[dict[str, Any] | str] = []
-    general_logs = _format_bot_log_list(bot_payload.get("general_logs"))
-    error_logs = _format_bot_log_list(bot_payload.get("error_logs"))
-    try:
-        active_result = await client.bot_orchestration.get_active_bots_status()
-        active_bot = _find_bot_info_by_name(active_result, bot.name or bot_id)
-        active_general_logs = _format_bot_log_list(active_bot.get("general_logs"))
-        active_error_logs = _format_bot_log_list(active_bot.get("error_logs"))
-        if active_general_logs:
-            general_logs = active_general_logs
-        if active_error_logs:
-            error_logs = active_error_logs
-    except Exception as e:
-        logger.warning("Failed to fetch active bot logs for '%s': %s: %s", bot_id, type(e).__name__, e)
-
-    return BotDetailResponse(
-        bot=bot,
-        config=config,
-        performance=performance,
-        general_logs=general_logs,
-        error_logs=error_logs,
-    )
+    return BotDetailResponse(bot=bot, config=config, performance=performance)
 
 
 @router.get("/servers/{name}/bots/{bot_id}/history", response_model=BotTradeHistoryResponse)
@@ -800,7 +450,6 @@ async def get_bot_history(
 
     client = await cm.get_client(name)
 
-    history_result: Any = None
     try:
         history_result = await client.bot_orchestration._get(
             f"/bot-orchestration/{bot_id}/history",
@@ -808,30 +457,12 @@ async def get_bot_history(
                 "days": days,
                 "verbose": "true" if verbose else "false",
                 "timeout": timeout,
-                "allow_unfiltered": "true",
             },
         )
     except Exception as e:
-        logger.warning("Live history fetch failed for '%s', trying archive: %s", bot_id, e)
-        try:
-            history_result = await _fetch_archived_bot_history(client, bot_id)
-        except Exception as archived_error:
-            raise HTTPException(status_code=502, detail=str(archived_error)) from e
+        raise HTTPException(status_code=502, detail=str(e))
 
-    trades = _sort_bot_history_trades(
-        _filter_bot_history_trades_by_days(
-            _extract_bot_history_trades(history_result), days
-        )
-    )
-    if not trades:
-        archived_trades = _sort_bot_history_trades(
-            _filter_bot_history_trades_by_days(
-                await _fetch_archived_bot_history(client, bot_id), days
-            )
-        )
-        if archived_trades:
-            trades = archived_trades
-
+    trades = _sort_bot_history_trades(_extract_bot_history_trades(history_result))
     total_count = len(trades)
     paginated = trades[offset : offset + limit]
 
@@ -1181,134 +812,3 @@ async def stop_bot_endpoint(
         raise HTTPException(status_code=502, detail=str(e))
 
     return result
-
-
-@router.get(
-    "/servers/{name}/bots/{bot_name}/container",
-    response_model=BotContainerStatusResponse,
-)
-async def get_bot_container_endpoint(
-    name: str, bot_name: str, user: WebUser = Depends(get_current_user)
-):
-    cm = get_config_manager()
-    if not cm.has_server_access(user.id, name):
-        raise HTTPException(status_code=403, detail="No access")
-
-    client = await cm.get_client(name)
-    try:
-        result = await client.docker.get_container_status(bot_name)
-    except Exception as e:
-        logger.warning("Failed to fetch container status for '%s': %s", bot_name, e)
-        return BotContainerStatusResponse(
-            name=bot_name,
-            status="not_found",
-            is_running=False,
-            exists=False,
-            raw={"error": str(e)},
-        )
-
-    return _normalize_container_status(bot_name, result)
-
-
-@router.post("/servers/{name}/bots/{bot_name}/container/start")
-async def start_bot_container_endpoint(
-    name: str, bot_name: str, user: WebUser = Depends(get_current_user)
-):
-    cm = get_config_manager()
-    if not cm.has_server_access(user.id, name):
-        raise HTTPException(status_code=403, detail="No access")
-
-    client = await cm.get_client(name)
-    try:
-        result = await client.docker.start_container(bot_name)
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=str(e))
-
-    return {"action": "start_container", "bot_name": bot_name, "result": result}
-
-
-@router.post("/servers/{name}/bots/{bot_name}/container/stop")
-async def stop_bot_container_endpoint(
-    name: str, bot_name: str, user: WebUser = Depends(get_current_user)
-):
-    cm = get_config_manager()
-    if not cm.has_server_access(user.id, name):
-        raise HTTPException(status_code=403, detail="No access")
-
-    client = await cm.get_client(name)
-    try:
-        result = await client.docker.stop_container(bot_name)
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=str(e))
-
-    return {"action": "stop_container", "bot_name": bot_name, "result": result}
-
-
-@router.post("/servers/{name}/bots/{bot_name}/controllers/start")
-async def start_bot_controllers_endpoint(
-    name: str, bot_name: str, user: WebUser = Depends(get_current_user)
-):
-    cm = get_config_manager()
-    if not cm.has_server_access(user.id, name):
-        raise HTTPException(status_code=403, detail="No access")
-
-    client = await cm.get_client(name)
-
-    from mcp_servers.hummingbot_api.tools.bot_management import manage_bot_execution
-
-    try:
-        bot_status = await client.bot_orchestration.get_bot_status(bot_name)
-        if not _is_running_bot_payload(bot_status):
-            raise HTTPException(status_code=409, detail=f"Bot '{bot_name}' is not running")
-
-        controller_names = await _get_bot_controller_names(client, bot_name)
-        if not controller_names:
-            raise HTTPException(status_code=404, detail=f"No controllers found for bot '{bot_name}'")
-
-        result = await manage_bot_execution(
-            client=client,
-            bot_name=bot_name,
-            action="start_controllers",
-            controller_names=controller_names,
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=str(e))
-
-    return {**result, "controller_names": controller_names}
-
-
-@router.post("/servers/{name}/bots/{bot_name}/controllers/stop")
-async def stop_bot_controllers_endpoint(
-    name: str, bot_name: str, user: WebUser = Depends(get_current_user)
-):
-    cm = get_config_manager()
-    if not cm.has_server_access(user.id, name):
-        raise HTTPException(status_code=403, detail="No access")
-
-    client = await cm.get_client(name)
-
-    from mcp_servers.hummingbot_api.tools.bot_management import manage_bot_execution
-
-    try:
-        bot_status = await client.bot_orchestration.get_bot_status(bot_name)
-        if not _is_running_bot_payload(bot_status):
-            raise HTTPException(status_code=409, detail=f"Bot '{bot_name}' is not running")
-
-        controller_names = await _get_bot_controller_names(client, bot_name)
-        if not controller_names:
-            raise HTTPException(status_code=404, detail=f"No controllers found for bot '{bot_name}'")
-
-        result = await manage_bot_execution(
-            client=client,
-            bot_name=bot_name,
-            action="stop_controllers",
-            controller_names=controller_names,
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=str(e))
-
-    return {**result, "controller_names": controller_names}
