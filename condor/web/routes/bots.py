@@ -3,20 +3,18 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+import yaml
 from fastapi import APIRouter, Depends, HTTPException
 
-from config_manager import get_config_manager
 from condor.web.auth import get_current_user
-import yaml
-
 from condor.web.models import (
     AvailableControllersResponse,
     BotDetailResponse,
     BotInfo,
-    BotRunSummary,
     BotRunsResponse,
-    BotSummary,
+    BotRunSummary,
     BotsPageResponse,
+    BotSummary,
     BotTradeHistoryItem,
     BotTradeHistoryResponse,
     ControllerConfigDetail,
@@ -26,6 +24,7 @@ from condor.web.models import (
     DeployBotRequest,
     WebUser,
 )
+from config_manager import get_config_manager
 
 logger = logging.getLogger(__name__)
 
@@ -76,15 +75,22 @@ def _extract_bots_list(result: Any) -> list[dict]:
         logger.warning("Bot status API returned None")
         return []
     if isinstance(result, str):
-        logger.warning("Bot status API returned string (possibly HTML error page): %s", result[:200])
+        logger.warning(
+            "Bot status API returned string (possibly HTML error page): %s",
+            result[:200],
+        )
         return []
     if isinstance(result, dict):
         if result.get("status") == "error":
-            logger.warning("Bot status API returned error: %s", result.get("message", result))
+            logger.warning(
+                "Bot status API returned error: %s", result.get("message", result)
+            )
             return []
         data = result.get("data", {})
         if isinstance(data, dict):
-            return [{"bot_name": k, **v} for k, v in data.items() if isinstance(v, dict)]
+            return [
+                {"bot_name": k, **v} for k, v in data.items() if isinstance(v, dict)
+            ]
         elif isinstance(data, list):
             return [b for b in data if isinstance(b, dict)]
         return []
@@ -129,9 +135,7 @@ def _is_inactive_bot_run(run: dict[str, Any]) -> bool:
     if deployment_status == "archived":
         return True
 
-    run_status = str(
-        run.get("run_status") or run.get("status") or ""
-    ).strip().lower()
+    run_status = str(run.get("run_status") or run.get("status") or "").strip().lower()
     return run_status != "running"
 
 
@@ -153,9 +157,13 @@ def _parse_bot_run(run: dict[str, Any]) -> BotRunSummary:
         bot_name=bot_name,
         run_status=str(run.get("run_status") or run.get("status") or "unknown"),
         deployment_status=str(run.get("deployment_status") or "unknown"),
-        account_name=str(run.get("account_name") or run.get("credentials_profile") or ""),
+        account_name=str(
+            run.get("account_name") or run.get("credentials_profile") or ""
+        ),
         strategy_type=str(run.get("strategy_type") or ""),
-        strategy_name=str(run.get("strategy_name") or run.get("script") or run.get("conf") or ""),
+        strategy_name=str(
+            run.get("strategy_name") or run.get("script") or run.get("conf") or ""
+        ),
         deployed_at=_optional_str(run.get("deployed_at")),
         created_at=_optional_str(run.get("created_at")),
         updated_at=_optional_str(run.get("updated_at")),
@@ -285,7 +293,9 @@ async def list_bots(name: str, user: WebUser = Depends(get_current_user)):
     from condor.server_data_service import ServerDataType, get_server_data_service
 
     try:
-        result = await get_server_data_service().get_or_fetch(name, ServerDataType.BOTS_STATUS)
+        result = await get_server_data_service().get_or_fetch(
+            name, ServerDataType.BOTS_STATUS
+        )
         logger.info("Bots status result for '%s': %r", name, result)
     except Exception as e:
         logger.warning("Failed to fetch bots from '%s': %s", name, e)
@@ -340,7 +350,9 @@ async def list_bots(name: str, user: WebUser = Depends(get_current_user)):
             if isinstance(runs_data, dict):
                 for bot_name, run_info in runs_data.items():
                     if isinstance(run_info, dict):
-                        deployed = run_info.get("deployed_at") or run_info.get("created_at")
+                        deployed = run_info.get("deployed_at") or run_info.get(
+                            "created_at"
+                        )
                         if deployed:
                             bot_runs[bot_name] = str(deployed)
                     elif isinstance(run_info, str):
@@ -417,7 +429,9 @@ async def list_bots(name: str, user: WebUser = Depends(get_current_user)):
 
                 # Use human-readable controller_name from config if available
                 config_cname = ctrl_config.get("controller_name", "")
-                config_id = ctrl_config.get("id") or ctrl_config.get("controller_id", "")
+                config_id = ctrl_config.get("id") or ctrl_config.get(
+                    "controller_id", ""
+                )
                 display_name = config_cname or ctrl_name
                 display_id = config_id or ctrl_name
 
@@ -518,7 +532,9 @@ async def get_bot(name: str, bot_id: str, user: WebUser = Depends(get_current_us
         config = raw_config
     else:
         try:
-            current_configs = await client.controllers.get_bot_controller_configs(bot_id)
+            current_configs = await client.controllers.get_bot_controller_configs(
+                bot_id
+            )
             if isinstance(current_configs, list) and current_configs:
                 if len(current_configs) == 1 and isinstance(current_configs[0], dict):
                     config = current_configs[0]
@@ -566,10 +582,18 @@ async def get_bot(name: str, bot_id: str, user: WebUser = Depends(get_current_us
             elif perf_by_controller:
                 performance = perf_by_controller
 
-    return BotDetailResponse(bot=bot, config=config, performance=performance)
+    return BotDetailResponse(
+        bot=bot,
+        config=config,
+        performance=performance,
+        general_logs=bot_payload.get("general_logs", []),
+        error_logs=bot_payload.get("error_logs", []),
+    )
 
 
-@router.get("/servers/{name}/bots/{bot_id}/history", response_model=BotTradeHistoryResponse)
+@router.get(
+    "/servers/{name}/bots/{bot_id}/history", response_model=BotTradeHistoryResponse
+)
 async def get_bot_history(
     name: str,
     bot_id: str,
@@ -768,7 +792,12 @@ async def get_controller_source(
     if isinstance(result, str):
         source = result
     elif isinstance(result, dict):
-        source = result.get("content") or result.get("source") or result.get("code") or str(result)
+        source = (
+            result.get("content")
+            or result.get("source")
+            or result.get("code")
+            or str(result)
+        )
     else:
         raise HTTPException(status_code=404, detail="Controller not found")
 
@@ -861,7 +890,9 @@ async def create_controller_config(
         try:
             parsed = yaml.safe_load(yaml_content)
             if not isinstance(parsed, dict):
-                raise HTTPException(status_code=400, detail="YAML must parse to a mapping")
+                raise HTTPException(
+                    status_code=400, detail="YAML must parse to a mapping"
+                )
             body = parsed
             body["id"] = config_id
         except yaml.YAMLError as e:
@@ -965,11 +996,15 @@ async def start_bot_controllers_endpoint(
     try:
         bot_status = await client.bot_orchestration.get_bot_status(bot_name)
         if not _is_running_bot_payload(bot_status):
-            raise HTTPException(status_code=409, detail=f"Bot '{bot_name}' is not running")
+            raise HTTPException(
+                status_code=409, detail=f"Bot '{bot_name}' is not running"
+            )
 
         controller_names = await _get_bot_controller_names(client, bot_name)
         if not controller_names:
-            raise HTTPException(status_code=404, detail=f"No controllers found for bot '{bot_name}'")
+            raise HTTPException(
+                status_code=404, detail=f"No controllers found for bot '{bot_name}'"
+            )
 
         result = await manage_bot_execution(
             client=client,
@@ -1000,11 +1035,15 @@ async def stop_bot_controllers_endpoint(
     try:
         bot_status = await client.bot_orchestration.get_bot_status(bot_name)
         if not _is_running_bot_payload(bot_status):
-            raise HTTPException(status_code=409, detail=f"Bot '{bot_name}' is not running")
+            raise HTTPException(
+                status_code=409, detail=f"Bot '{bot_name}' is not running"
+            )
 
         controller_names = await _get_bot_controller_names(client, bot_name)
         if not controller_names:
-            raise HTTPException(status_code=404, detail=f"No controllers found for bot '{bot_name}'")
+            raise HTTPException(
+                status_code=404, detail=f"No controllers found for bot '{bot_name}'"
+            )
 
         result = await manage_bot_execution(
             client=client,
