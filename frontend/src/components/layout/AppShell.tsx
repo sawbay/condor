@@ -4,6 +4,8 @@ import {
   Bot,
   Brain,
   CandlestickChart,
+  Menu,
+  X,
   Swords,
   Zap,
   LogOut,
@@ -39,16 +41,26 @@ export function AppShell() {
   const { pathname } = useLocation();
   const { theme, toggleTheme } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Prefetch core data (executors, bots) and subscribe to WS channels early
   usePrefetchData();
 
   return (
-    <div className="flex h-screen">
+    <div className="flex min-h-svh bg-[var(--color-bg)]">
+      {mobileNavOpen && (
+        <button
+          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          aria-label="Close navigation menu overlay"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      )}
       {/* Sidebar */}
       <aside
-        className={`flex flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] transition-all duration-200 ${
-          collapsed ? "w-14" : "w-56"
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] transition-transform duration-200 md:static md:translate-x-0 ${
+          mobileNavOpen ? "translate-x-0" : "-translate-x-full"
+        } ${
+          collapsed ? "md:w-14" : "md:w-56"
         }`}
       >
         <div className="flex items-center justify-between border-b border-[var(--color-border)] p-4">
@@ -89,6 +101,7 @@ export function AppShell() {
               key={to}
               to={to}
               end={to === "/"}
+              onClick={() => setMobileNavOpen(false)}
               title={collapsed ? label : undefined}
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
@@ -151,10 +164,32 @@ export function AppShell() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto p-6">
+      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 md:hidden">
+          <button
+            onClick={() => setMobileNavOpen((prev) => !prev)}
+            className="rounded-md p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
+            aria-label={mobileNavOpen ? "Close navigation menu" : "Open navigation menu"}
+          >
+            {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <img src="/condor_old.jpeg" alt="Condor" className="h-6 w-6 rounded-full" />
+            Condor
+          </div>
+          <button
+            onClick={toggleTheme}
+            className="rounded-md p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-accent)]"
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+        </div>
+        <div className="flex-1 overflow-auto p-4 md:p-6">
         <ErrorBoundary resetKey={pathname + server}>
           <Outlet />
         </ErrorBoundary>
+        </div>
       </main>
     </div>
   );
