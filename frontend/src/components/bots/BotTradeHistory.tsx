@@ -5,6 +5,13 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 
 const PAGE_SIZE = 20;
+const HISTORY_RANGES = [
+  { label: "2M", days: 60 },
+  { label: "30d", days: 30 },
+  { label: "7d", days: 7 },
+] as const;
+
+type HistoryRangeDays = (typeof HISTORY_RANGES)[number]["days"];
 
 function formatTimestamp(value: number): string {
   if (!value) return "unknown";
@@ -31,6 +38,7 @@ export function BotTradeHistory({
   botId: string;
 }) {
   const [page, setPage] = useState(0);
+  const [historyDays, setHistoryDays] = useState<HistoryRangeDays>(30);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [refreshAnchor, setRefreshAnchor] = useState<number | null>(null);
@@ -38,7 +46,7 @@ export function BotTradeHistory({
 
   useEffect(() => {
     setPage(0);
-  }, [botId, server]);
+  }, [botId, historyDays, server]);
 
   useEffect(() => {
     if (!autoRefresh) return;
@@ -55,12 +63,12 @@ export function BotTradeHistory({
   }, [autoRefresh]);
 
   const { data, isLoading, isFetching, error, refetch, dataUpdatedAt } = useQuery({
-    queryKey: ["bot-history", server, botId, page],
+    queryKey: ["bot-history", server, botId, historyDays, page],
     queryFn: () =>
       api.getBotHistory(server, botId, {
         limit: PAGE_SIZE,
         offset: page * PAGE_SIZE,
-        days: 0,
+        days: historyDays,
         verbose: true,
         timeout: 60,
     }),
@@ -70,6 +78,8 @@ export function BotTradeHistory({
   });
 
   const trades = data?.trades ?? [];
+  const activeRangeLabel =
+    HISTORY_RANGES.find((range) => range.days === historyDays)?.label ?? `${historyDays}d`;
   const sortedTrades = [...trades].sort((a, b) => {
     const aTs = a.trade_timestamp ?? 0;
     const bTs = b.trade_timestamp ?? 0;
@@ -109,10 +119,31 @@ export function BotTradeHistory({
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <h3 className="font-medium text-[var(--color-text-muted)]">Trade History</h3>
-          <p className="text-xs text-[var(--color-text-muted)]">{totalCount} trades total</p>
+          <p className="text-xs text-[var(--color-text-muted)]">
+            {totalCount} trades in {activeRangeLabel}
+          </p>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <div className="flex items-center rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] p-0.5">
+              {HISTORY_RANGES.map((range) => {
+                const active = range.days === historyDays;
+                return (
+                  <button
+                    key={range.label}
+                    type="button"
+                    onClick={() => setHistoryDays(range.days)}
+                    className={`min-w-10 rounded px-2 py-1 text-xs transition-colors ${
+                      active
+                        ? "bg-[var(--color-surface)] font-semibold text-[var(--color-text)]"
+                        : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]"
+                    }`}
+                  >
+                    {range.label}
+                  </button>
+                );
+              })}
+            </div>
             <button
               type="button"
               onClick={() => void refetch()}
