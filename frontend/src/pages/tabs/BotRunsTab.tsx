@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useServer } from "@/hooks/useServer";
-import { api, type BotRunSummary } from "@/lib/api";
+import { api, type ArchivedBotSummary, type BotRunSummary } from "@/lib/api";
+import { ArchivedBotDetail } from "@/pages/tabs/ArchivedBotsTab";
 
 const PAGE_SIZE = 50;
 
@@ -55,9 +56,59 @@ function BotRunStatus({ run }: { run: BotRunSummary }) {
   );
 }
 
-function BotNameCell({ run }: { run: BotRunSummary }) {
+function rawString(run: BotRunSummary, key: string): string {
+  const value = run.raw[key];
+  return typeof value === "string" ? value : "";
+}
+
+function findArchivedBot(
+  run: BotRunSummary,
+  archivedBots: ArchivedBotSummary[],
+): ArchivedBotSummary | null {
+  const rawDbPath = rawString(run, "db_path") || rawString(run, "path");
+  if (rawDbPath) {
+    const byPath = archivedBots.find((bot) => bot.db_path === rawDbPath);
+    if (byPath) return byPath;
+    return {
+      bot_name: run.bot_name,
+      db_path: rawDbPath,
+      total_trades: 0,
+      total_orders: 0,
+      trading_pairs: [],
+      exchanges: [],
+      start_time: null,
+      end_time: null,
+    };
+  }
+  return (
+    archivedBots.find((bot) => bot.bot_name === run.bot_name) ||
+    archivedBots.find((bot) => bot.db_path.includes(run.bot_name)) ||
+    null
+  );
+}
+
+function BotNameCell({
+  run,
+  archivedBot,
+  onOpenArchived,
+}: {
+  run: BotRunSummary;
+  archivedBot: ArchivedBotSummary | null;
+  onOpenArchived: (bot: ArchivedBotSummary) => void;
+}) {
   if (!run.bot_name) return <span>-</span>;
   if (run.deployment_status.toLowerCase() === "archived") {
+    if (archivedBot) {
+      return (
+        <button
+          type="button"
+          onClick={() => onOpenArchived(archivedBot)}
+          className="font-medium text-left hover:underline"
+        >
+          {run.bot_name}
+        </button>
+      );
+    }
     return <span className="font-medium">{run.bot_name}</span>;
   }
   return (
@@ -67,7 +118,11 @@ function BotNameCell({ run }: { run: BotRunSummary }) {
   );
 }
 
-export function BotRunsTab() {
+function BotRunsList({
+  onOpenArchived,
+}: {
+  onOpenArchived: (bot: ArchivedBotSummary) => void;
+}) {
   const { server } = useServer();
   const [page, setPage] = useState(0);
   const offset = page * PAGE_SIZE;
@@ -79,7 +134,15 @@ export function BotRunsTab() {
     refetchInterval: 10000,
   });
 
+  const { data: archivedData } = useQuery({
+    queryKey: ["archived-bots", server],
+    queryFn: () => api.getArchivedBots(server!),
+    enabled: !!server,
+    staleTime: 30000,
+  });
+
   const runs = data?.runs ?? [];
+  const archivedBots = archivedData?.bots ?? [];
   const totalCount = data?.total_count ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const sortedRuns = useMemo(
@@ -165,7 +228,11 @@ export function BotRunsTab() {
                   className="border-b border-[var(--color-border)]/30 last:border-0 hover:bg-[var(--color-surface-hover)]/50"
                 >
                   <td className="px-4 py-2.5">
-                    <BotNameCell run={run} />
+                    <BotNameCell
+                      run={run}
+                      archivedBot={findArchivedBot(run, archivedBots)}
+                      onOpenArchived={onOpenArchived}
+                    />
                   </td>
                   <td className="px-4 py-2.5">
                     <BotRunStatus run={run} />
@@ -215,5 +282,24 @@ export function BotRunsTab() {
         </div>
       </div>
     </div>
+  );
+}
+
+export function BotRunsTab() {
+  const [selectedArchivedBot, setSelectedArchivedBot] = useState<ArchivedBotSummary | null>(null);
+
+  if (selectedArchivedBot) {
+    return (
+      <ArchivedBotDetail
+        dbPath={selectedArchivedBot.db_path}
+        startTime={selectedArchivedBot.start_time ?? undefined}
+        endTime={selectedArchivedBot.end_time ?? undefined}
+        onBack={() => setSelectedArchivedBot(null)}
+      />
+    );
+  }
+
+  return (
+    <BotRunsList onOpenArchived={setSelectedArchivedBot} />
   );
 }

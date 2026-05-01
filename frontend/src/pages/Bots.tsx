@@ -1,4 +1,4 @@
-import { Archive, Bot, Code2, FileText, FlaskConical, History, Loader2 } from "lucide-react";
+import { Bot, Code2, FileText, FlaskConical, History, Loader2 } from "lucide-react";
 import { lazy, Suspense, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -10,9 +10,6 @@ const ControllersTab = lazy(() =>
 );
 const ConfigsTab = lazy(() =>
   import("@/pages/tabs/ConfigsTab").then((m) => ({ default: m.ConfigsTab })),
-);
-const ArchivedBotsTab = lazy(() =>
-  import("@/pages/tabs/ArchivedBotsTab").then((m) => ({ default: m.ArchivedBotsTab })),
 );
 const BotRunsTab = lazy(() =>
   import("@/pages/tabs/BotRunsTab").then((m) => ({ default: m.BotRunsTab })),
@@ -26,7 +23,6 @@ const TABS = [
   { key: "controllers", label: "Controllers", icon: Code2 },
   { key: "configs", label: "Configs", icon: FileText },
   { key: "runs", label: "Runs", icon: History },
-  { key: "archived", label: "Archived", icon: Archive },
   { key: "backtest", label: "Backtest", icon: FlaskConical },
 ] as const;
 
@@ -42,7 +38,13 @@ function FallbackSpinner() {
 
 export function Bots() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const currentTab = (searchParams.get("tab") as TabKey) || "active";
+  const requestedTab = searchParams.get("tab");
+  const currentTab =
+    requestedTab === "archived"
+      ? "runs"
+      : TABS.some((tab) => tab.key === requestedTab)
+        ? (requestedTab as TabKey)
+        : "active";
   const visitedRef = useRef<Set<TabKey>>(new Set([currentTab]));
   visitedRef.current.add(currentTab);
 
@@ -92,11 +94,6 @@ export function Bots() {
         {visitedRef.current.has("runs") && (
           <div style={{ display: currentTab === "runs" ? undefined : "none" }}>
             <BotRunsTab />
-          </div>
-        )}
-        {visitedRef.current.has("archived") && (
-          <div style={{ display: currentTab === "archived" ? undefined : "none" }}>
-            <ArchivedBotsTab />
           </div>
         )}
         {visitedRef.current.has("backtest") && (

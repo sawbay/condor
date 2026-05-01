@@ -344,7 +344,7 @@ function ExecutorTable({ server, dbPath, executorCount }: { server: string; dbPa
 
 // ── Detail View ──
 
-function ArchivedBotDetail({ dbPath, startTime: botStartTime, endTime: botEndTime, onBack }: { dbPath: string; startTime?: number; endTime?: number; onBack: () => void }) {
+export function ArchivedBotDetail({ dbPath, startTime: botStartTime, endTime: botEndTime, onBack }: { dbPath: string; startTime?: number; endTime?: number; onBack: () => void }) {
   const { server } = useServer();
 
   // Query 1: Performance summary (no executors) — fast path
