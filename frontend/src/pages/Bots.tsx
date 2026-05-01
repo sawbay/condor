@@ -1,4 +1,4 @@
-import { Archive, Bot, Code2, FileText, FlaskConical, Loader2 } from "lucide-react";
+import { Archive, Bot, Code2, FileText, FlaskConical, History, Loader2 } from "lucide-react";
 import { lazy, Suspense, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -14,6 +14,9 @@ const ConfigsTab = lazy(() =>
 const ArchivedBotsTab = lazy(() =>
   import("@/pages/tabs/ArchivedBotsTab").then((m) => ({ default: m.ArchivedBotsTab })),
 );
+const BotRunsTab = lazy(() =>
+  import("@/pages/tabs/BotRunsTab").then((m) => ({ default: m.BotRunsTab })),
+);
 const BacktestingTab = lazy(() =>
   import("@/pages/tabs/BacktestingTab").then((m) => ({ default: m.BacktestingTab })),
 );
@@ -22,6 +25,7 @@ const TABS = [
   { key: "active", label: "Active", icon: Bot },
   { key: "controllers", label: "Controllers", icon: Code2 },
   { key: "configs", label: "Configs", icon: FileText },
+  { key: "runs", label: "Runs", icon: History },
   { key: "archived", label: "Archived", icon: Archive },
   { key: "backtest", label: "Backtest", icon: FlaskConical },
 ] as const;
@@ -83,6 +87,11 @@ export function Bots() {
         {visitedRef.current.has("configs") && (
           <div style={{ display: currentTab === "configs" ? undefined : "none" }}>
             <ConfigsTab />
+          </div>
+        )}
+        {visitedRef.current.has("runs") && (
+          <div style={{ display: currentTab === "runs" ? undefined : "none" }}>
+            <BotRunsTab />
           </div>
         )}
         {visitedRef.current.has("archived") && (

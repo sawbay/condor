@@ -157,6 +157,27 @@ class BotSummary(BaseModel):
     deployed_at: Optional[str] = None
 
 
+class BotRunSummary(BaseModel):
+    bot_name: str
+    run_status: str = "unknown"
+    deployment_status: str = "unknown"
+    account_name: str = ""
+    strategy_type: str = ""
+    strategy_name: str = ""
+    deployed_at: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+    archived_at: Optional[str] = None
+    raw: dict[str, Any] = {}
+
+
+class BotRunsResponse(BaseModel):
+    runs: list[BotRunSummary] = []
+    total_count: int = 0
+    limit: int = 100
+    offset: int = 0
+
+
 class BotsPageResponse(BaseModel):
     controllers: list[ControllerInfo] = []
     bots: list[BotSummary] = []

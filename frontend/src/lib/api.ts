@@ -151,6 +151,27 @@ export interface BotSummary {
   deployed_at: string | null;
 }
 
+export interface BotRunSummary {
+  bot_name: string;
+  run_status: string;
+  deployment_status: string;
+  account_name: string;
+  strategy_type: string;
+  strategy_name: string;
+  deployed_at: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  archived_at: string | null;
+  raw: Record<string, unknown>;
+}
+
+export interface BotRunsResponse {
+  runs: BotRunSummary[];
+  total_count: number;
+  limit: number;
+  offset: number;
+}
+
 export interface BotsPageResponse {
   controllers: ControllerInfo[];
   bots: BotSummary[];
@@ -534,6 +555,14 @@ export const api = {
 
   getBots: (server: string) =>
     apiFetch<BotsPageResponse>(`/api/v1/servers/${server}/bots`),
+
+  getBotRuns: (server: string, params?: { limit?: number; offset?: number; include_running?: boolean }) => {
+    const qs = new URLSearchParams();
+    qs.set("limit", String(params?.limit ?? 100));
+    qs.set("offset", String(params?.offset ?? 0));
+    if (params?.include_running) qs.set("include_running", "true");
+    return apiFetch<BotRunsResponse>(`/api/v1/servers/${server}/bots/runs?${qs.toString()}`);
+  },
 
   getBot: (server: string, botId: string) =>
     apiFetch<BotDetail>(`/api/v1/servers/${server}/bots/${botId}`),

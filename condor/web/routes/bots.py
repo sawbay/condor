@@ -13,6 +13,8 @@ from condor.web.models import (
     AvailableControllersResponse,
     BotDetailResponse,
     BotInfo,
+    BotRunSummary,
+    BotRunsResponse,
     BotSummary,
     BotsPageResponse,
     BotTradeHistoryItem,
@@ -104,6 +106,64 @@ def _unwrap_bot_detail(result: Any) -> dict[str, Any]:
     return result
 
 
+def _extract_bot_runs(result: Any) -> list[dict[str, Any]]:
+    """Normalize bot-runs responses into a list of run dicts."""
+    if isinstance(result, dict):
+        data = result.get("data", result.get("runs", result.get("items", result)))
+        if isinstance(data, list):
+            return [run for run in data if isinstance(run, dict)]
+        if isinstance(data, dict):
+            return [
+                {"bot_name": bot_name, **run}
+                for bot_name, run in data.items()
+                if isinstance(run, dict)
+            ]
+    if isinstance(result, list):
+        return [run for run in result if isinstance(run, dict)]
+    return []
+
+
+def _is_inactive_bot_run(run: dict[str, Any]) -> bool:
+    """Return whether a bot run should appear in inactive/archive run views."""
+    deployment_status = str(run.get("deployment_status") or "").strip().lower()
+    if deployment_status == "archived":
+        return True
+
+    run_status = str(
+        run.get("run_status") or run.get("status") or ""
+    ).strip().lower()
+    return run_status != "running"
+
+
+def _optional_str(value: Any) -> str | None:
+    if value in (None, ""):
+        return None
+    return str(value)
+
+
+def _parse_bot_run(run: dict[str, Any]) -> BotRunSummary:
+    bot_name = str(
+        run.get("bot_name")
+        or run.get("name")
+        or run.get("instance_name")
+        or run.get("id")
+        or ""
+    )
+    return BotRunSummary(
+        bot_name=bot_name,
+        run_status=str(run.get("run_status") or run.get("status") or "unknown"),
+        deployment_status=str(run.get("deployment_status") or "unknown"),
+        account_name=str(run.get("account_name") or run.get("credentials_profile") or ""),
+        strategy_type=str(run.get("strategy_type") or ""),
+        strategy_name=str(run.get("strategy_name") or run.get("script") or run.get("conf") or ""),
+        deployed_at=_optional_str(run.get("deployed_at")),
+        created_at=_optional_str(run.get("created_at")),
+        updated_at=_optional_str(run.get("updated_at")),
+        archived_at=_optional_str(run.get("archived_at")),
+        raw=run,
+    )
+
+
 def _extract_bot_history_trades(result: Any) -> list[dict[str, Any]]:
     """Extract trade rows from the nested bot history response."""
     current = result
@@ -186,6 +246,7 @@ async def list_bots(name: str, user: WebUser = Depends(get_current_user)):
 
     try:
         result = await get_server_data_service().get_or_fetch(name, ServerDataType.BOTS_STATUS)
+        logger.info("Bots status result for '%s': %r", name, result)
     except Exception as e:
         logger.warning("Failed to fetch bots from '%s': %s", name, e)
         return BotsPageResponse(
@@ -355,6 +416,41 @@ async def list_bots(name: str, user: WebUser = Depends(get_current_user)):
         bots=bots,
         total_pnl=total_pnl,
         total_volume=total_volume,
+    )
+
+
+@router.get("/servers/{name}/bots/runs", response_model=BotRunsResponse)
+async def list_bot_runs(
+    name: str,
+    user: WebUser = Depends(get_current_user),
+    limit: int = 100,
+    offset: int = 0,
+    include_running: bool = False,
+):
+    cm = get_config_manager()
+    if not cm.has_server_access(user.id, name):
+        raise HTTPException(status_code=403, detail="No access")
+
+    client = await cm.get_client(name)
+    try:
+        result = await client.bot_orchestration.get_bot_runs(
+            limit=max(limit + offset, limit),
+            offset=0,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+    runs = _extract_bot_runs(result)
+    if not include_running:
+        runs = [run for run in runs if _is_inactive_bot_run(run)]
+
+    total_count = len(runs)
+    paginated = runs[offset : offset + limit]
+    return BotRunsResponse(
+        runs=[_parse_bot_run(run) for run in paginated],
+        total_count=total_count,
+        limit=limit,
+        offset=offset,
     )
 
 
