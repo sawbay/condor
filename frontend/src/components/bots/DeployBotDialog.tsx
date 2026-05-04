@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {
   api,
@@ -294,6 +295,7 @@ export function DeployBotDialog({
   server: string;
 }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2>(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [expandedConfig, setExpandedConfig] = useState<string | null>(null);
@@ -400,12 +402,54 @@ export function DeployBotDialog({
           : null,
       });
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       // Invalidate config caches since we may have updated them
       queryClient.invalidateQueries({ queryKey: ["bots", server] });
       queryClient.invalidateQueries({ queryKey: ["config-detail"] });
       queryClient.invalidateQueries({ queryKey: ["available-configs", server] });
       handleClose();
+
+      const instanceName = data.unique_instance_name;
+      if (instanceName) {
+        navigate(`/bots/${instanceName}`);
+
+        // Establish WS connection to track deployment
+        const wsUrl = `wss://admin:admin@humming-api2.sawbay.net/ws/executors`;
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+          console.log(`[Deployment WS] Connected, subscribing to ${instanceName}`);
+          ws.send(JSON.stringify({
+            action: "subscribe",
+            type: "bot_deployment",
+            instance_name: instanceName,
+            update_interval: 2.0
+          }));
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            console.log("[Deployment WS] Received:", msg);
+            
+            // Note: server automatically stops loop when terminal state is reached
+            if (msg.type === "bot_deployment_resolved") {
+              console.log("[Deployment WS] Deployment resolved, closing connection");
+              ws.close();
+            }
+          } catch (e) {
+            console.error("[Deployment WS] Failed to parse message:", e);
+          }
+        };
+
+        ws.onerror = (error) => {
+          console.error("[Deployment WS] WebSocket error:", error);
+        };
+
+        ws.onclose = () => {
+          console.log("[Deployment WS] Connection closed");
+        };
+      }
     },
     onError: (err) => {
       setDeployError(err instanceof Error ? err.message : "Deployment failed");
