@@ -1,17 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowLeft,
-  Check,
-  ChevronDown,
-  ChevronRight,
-  Package,
-  Pencil,
-  Rocket,
-  RotateCcw,
-  Search,
-  X,
-} from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, ChevronRight, Package, Pencil, Rocket, RotateCcw, Search, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {
   api,
@@ -294,6 +284,7 @@ export function DeployBotDialog({
   server: string;
 }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2>(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [expandedConfig, setExpandedConfig] = useState<string | null>(null);
@@ -400,12 +391,15 @@ export function DeployBotDialog({
           : null,
       });
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       // Invalidate config caches since we may have updated them
       queryClient.invalidateQueries({ queryKey: ["bots", server] });
       queryClient.invalidateQueries({ queryKey: ["config-detail"] });
       queryClient.invalidateQueries({ queryKey: ["available-configs", server] });
+      
+      const instanceName = data?.unique_instance_name || botName;
       handleClose();
+      navigate(`/bots/${instanceName}`);
     },
     onError: (err) => {
       setDeployError(err instanceof Error ? err.message : "Deployment failed");

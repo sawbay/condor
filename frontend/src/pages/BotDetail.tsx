@@ -119,8 +119,88 @@ export function BotDetail() {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [now, setNow] = useState(Date.now());
   const logsScrollRef = useRef<HTMLDivElement | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
   const [refreshAnchor, setRefreshAnchor] = useState<number | null>(null);
   const refreshIntervalMs = 10000;
+
+  // WebSocket for deployment and status monitoring
+  useEffect(() => {
+    if (!id) return;
+
+    // Use Basic Auth credentials in the URL as requested
+    // Use Authorization Header approach as requested
+    const wsUrl = `wss://humming-api2.sawbay.net/ws/executors`;
+    
+    let ws: WebSocket | null = null;
+
+    const establishConnection = () => {
+      console.log(`[WS] Connecting to ${wsUrl} for bot: ${id}`);
+      try {
+        ws = new WebSocket(wsUrl);
+        wsRef.current = ws;
+        setupHandlers(ws);
+      } catch (err) {
+        console.error("[WS] Failed to create WebSocket:", err);
+      }
+    };
+
+    const setupHandlers = (websocket: WebSocket) => {
+      websocket.onopen = () => {
+        console.log("[WS] Connected. Authenticating...");
+        // 1. Authenticate immediately after connection is accepted
+        websocket.send(JSON.stringify({
+          action: "authenticate",
+          username: "admin",
+          password: "admin"
+        }));
+
+        // 2. Subscribe to bot_deployment immediately after authentication
+        console.log(`[WS] Subscribing to deployment for: ${id}`);
+        websocket.send(JSON.stringify({
+          action: "subscribe",
+          type: "bot_deployment",
+          instance_name: id,
+          update_interval: 2.0
+        }));
+      };
+
+      websocket.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          console.log("[WS] Received:", msg);
+          if (msg.type === "bot_deployment_resolved") {
+            console.log("[WS] Deployment resolved. Switching to ongoing monitoring...");
+            websocket.send(JSON.stringify({
+              action: "subscribe",
+              type: "bot_status",
+              bot_name: id
+            }));
+          }
+        } catch (err) {
+          console.error("[WS] Error parsing message:", err);
+        }
+      };
+
+      websocket.onerror = (err) => {
+        console.error("[WS] WebSocket error:", err);
+      };
+
+      websocket.onclose = (event) => {
+        console.log(`[WS] WebSocket closed (code: ${event.code}, reason: ${event.reason})`);
+      };
+    };
+
+    establishConnection();
+
+    return () => {
+      console.log("[WS] Cleaning up WebSocket");
+      const currentWs = wsRef.current;
+      if (currentWs && (currentWs.readyState === WebSocket.OPEN || currentWs.readyState === WebSocket.CONNECTING)) {
+        currentWs.close();
+      }
+      wsRef.current = null;
+    };
+  }, [id]);
 
   const { data, isLoading, isFetching, error, refetch, dataUpdatedAt } = useQuery({
     queryKey: ["bot", server, id],
@@ -460,11 +540,10 @@ export function BotDetail() {
               <button
                 type="button"
                 onClick={() => setAutoRefresh((value) => !value)}
-                className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs ${
-                  autoRefresh
+                className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs ${autoRefresh
                     ? "border-[var(--color-green)]/40 bg-[var(--color-green)]/10 text-[var(--color-green)]"
                     : "border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface)]"
-                }`}
+                  }`}
               >
                 Auto
                 <span className="text-[10px] opacity-75">
@@ -489,38 +568,34 @@ export function BotDetail() {
                 {parsedLogs.map((log, idx) => (
                   <details
                     key={`${log.sortKey}-${idx}`}
-                    className={`group rounded border px-3 py-2 ${
-                      log.isError
+                    className={`group rounded border px-3 py-2 ${log.isError
                         ? "border-[var(--color-red)]/30 bg-[var(--color-red)]/5"
                         : "border-[var(--color-border)]/40 bg-[var(--color-surface)]"
-                    }`}
+                      }`}
                   >
                     <summary className="cursor-pointer list-none">
                       <div className="flex items-start gap-3">
                         <span
-                          className={`min-w-44 font-mono ${
-                            log.isError
+                          className={`min-w-44 font-mono ${log.isError
                               ? "text-[var(--color-red)]"
                               : "text-[var(--color-text-muted)]"
-                          }`}
+                            }`}
                         >
                           {log.timestamp || "unknown"}
                         </span>
                         <span
-                          className={`min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-mono ${
-                            log.isError ? "text-[var(--color-red)]" : ""
-                          }`}
+                          className={`min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-mono ${log.isError ? "text-[var(--color-red)]" : ""
+                            }`}
                         >
                           {log.summary}
                         </span>
                       </div>
                     </summary>
                     <div
-                      className={`mt-2 border-t pt-2 font-mono whitespace-pre-wrap break-words ${
-                        log.isError
+                      className={`mt-2 border-t pt-2 font-mono whitespace-pre-wrap break-words ${log.isError
                           ? "border-[var(--color-red)]/20 text-[var(--color-red)]"
                           : "border-[var(--color-border)]/40 text-[var(--color-text)]"
-                      }`}
+                        }`}
                     >
                       {log.fullText}
                     </div>
