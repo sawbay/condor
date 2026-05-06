@@ -14,8 +14,11 @@ import { Link, useParams } from "react-router-dom";
 import yaml from "js-yaml";
 
 import { CodeEditor } from "@/components/editor/CodeEditor";
+import { ExecutorChart } from "@/components/charts/ExecutorChart";
+import { GridChart } from "@/components/grid/GridChart";
 import { useServer } from "@/hooks/useServer";
 import { api } from "@/lib/api";
+import { useTradingRules } from "@/components/market/PairSelector";
 
 export function BotDetail() {
   const { id } = useParams<{ id: string }>();
@@ -28,12 +31,45 @@ export function BotDetail() {
   const [yamlError, setYamlError] = useState<string | null>(null);
   const prevConfigSig = useRef("");
 
+
+
+
+
+
+
+  const { data: executorsData } = useQuery({
+    queryKey: ["bot-executors", server, id],
+    queryFn: () => api.getExecutors(server!, { controller_id: id }),
+    enabled: !!server && !!id,
+    refetchInterval: 10000,
+  });
+
+  const activeExecutors = useMemo(() => {
+    if (!executorsData) return [];
+    return executorsData.filter(
+      (ex) => ex.status === "running" || ex.status === "active_position" || ex.status === "active",
+    );
+  }, [executorsData]);
   const { data, isLoading, error } = useQuery({
     queryKey: ["bot", server, id],
     queryFn: () => api.getBot(server!, id!),
     enabled: !!server && !!id,
     refetchInterval: 10000,
   });
+
+
+  const botPair = data?.bot?.trading_pair;
+  const botConnector = data?.bot?.connector;
+  const rulesData = useTradingRules(server ?? "", botConnector ?? "");
+
+  const pricePrecision = useMemo(() => {
+    if (!rulesData?.rules || !botPair) return undefined;
+    const rule = rulesData.rules.find((r) => r.trading_pair === botPair);
+    if (!rule || !rule.min_price_increment) return undefined;
+    const inc = rule.min_price_increment;
+    if (inc >= 1) return 0;
+    return Math.max(0, Math.ceil(-Math.log10(inc)));
+  }, [rulesData, botPair]);
 
   // Derive config_id from config dict
   const configId = data?.config
@@ -252,6 +288,48 @@ export function BotDetail() {
           )}
         </div>
       </div>
+
+      {bot.connector && bot.trading_pair && activeExecutors.length > 0 && (
+        <div className="mt-6 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+          <h3 className="mb-3 font-medium text-[var(--color-text-muted)]">
+            Live Executors
+          </h3>
+          <div className="h-[400px]">
+            <ExecutorChart
+              server={server!}
+              executors={activeExecutors}
+              connector={bot.connector}
+              tradingPair={bot.trading_pair}
+              height={400}
+            />
+          </div>
+        </div>
+      )}
+
+      {bot.connector && bot.trading_pair && (bot.controller_type === "grid_strike" || config.executor_type === "grid_executor" || config.start_price !== undefined) && (
+        <div className="mt-6 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+          <h3 className="mb-3 font-medium text-[var(--color-text-muted)]">
+            Grid Configuration (Preview)
+          </h3>
+          <div className="h-[400px]">
+            <GridChart
+              server={server!}
+              connector={bot.connector}
+              pair={bot.trading_pair}
+              interval={String(config.interval || "1m")}
+              lookbackSeconds={24 * 60 * 60}
+              startPrice={Number(config.start_price || 0)}
+              endPrice={Number(config.end_price || 0)}
+              limitPrice={Number(config.limit_price || 0)}
+              side={Number(config.side || 1) as 1 | 2}
+              minSpread={Number(config.min_spread_between_orders || config.grid_spread || 0.001)}
+              activePickField={null}
+              onPriceSet={() => {}}
+              pricePrecision={pricePrecision}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
