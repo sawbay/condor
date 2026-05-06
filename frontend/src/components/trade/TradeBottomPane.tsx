@@ -100,7 +100,7 @@ export function TradeBottomPane({ executors, positions, isLoadingPositions }: Tr
   const sortedExecutors = [...executors].sort((a, b) => b.timestamp - a.timestamp);
 
   return (
-    <div className="border-t border-[var(--color-border)] bg-[var(--color-surface)]">
+    <div className="border-t border-[var(--color-border)] bg-transparent">
       {/* Toggle handle */}
       <button
         onClick={() => setExpanded((p) => !p)}
@@ -240,7 +240,7 @@ export function TradeBottomPane({ executors, positions, isLoadingPositions }: Tr
                     return (
                       <div
                         key={`${pos.connector_name}-${pos.trading_pair}-${pos.position_side}-${i}`}
-                        className="rounded border border-[var(--color-border)]/50 bg-[var(--color-bg)] px-2.5 py-1.5"
+                        className="rounded border border-[var(--color-border)] ghost-panel/50 bg-[var(--color-bg)] px-2.5 py-1.5"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -297,7 +297,7 @@ export function TradeBottomPane({ executors, positions, isLoadingPositions }: Tr
       {/* Stop confirmation */}
       {confirmStopId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-xl">
+          <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4 shadow-none">
             <p className="text-sm text-[var(--color-text)]">
               Stop executor <span className="font-mono text-[var(--color-text-muted)]">{confirmStopId.slice(0, 8)}</span>?
             </p>

@@ -89,7 +89,7 @@ function StatCard({
   subtitleColor?: string;
 }) {
   return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+    <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-4 py-3">
       <div className="flex items-center gap-2 mb-1">
         <Icon className="h-3.5 w-3.5 text-[var(--color-text-muted)]" />
         <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider">
@@ -123,7 +123,7 @@ function TokenBarChart({
   const maxVal = tokens[0]?.usd_value ?? 0;
 
   return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+    <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
       <h3 className="text-sm font-medium text-[var(--color-text-muted)] mb-3">{title}</h3>
       <div className="flex flex-col gap-2">
         {tokens.map((t, i) => {
@@ -216,7 +216,7 @@ function ConnectorRow({
   return (
     <>
       <tr
-        className="cursor-pointer border-b border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)]"
+        className="cursor-pointer border-b border-[var(--color-border)] bg-transparent hover:bg-[var(--color-surface-hover)]"
         onClick={() => setExpanded(!expanded)}
       >
         <td className="px-4 py-3">
@@ -401,11 +401,11 @@ function PortfolioEvolution({ server }: { server: string }) {
   const tooltipW = stacked && hoverTokenEntries.length > 0 ? 150 : 108;
 
   return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+    <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-medium text-[var(--color-text-muted)]">Portfolio Evolution</h3>
         <div className="flex items-center gap-2">
-          <div className="flex gap-0.5 rounded border border-[var(--color-border)] p-0.5">
+          <div className="flex gap-0.5 rounded border border-[var(--color-border)] ghost-panel p-0.5">
             <button
               onClick={() => setStacked(false)}
               className={`p-1 rounded transition-colors ${!stacked ? "bg-[var(--color-accent)] text-white" : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]"}`}
@@ -643,7 +643,7 @@ export function Portfolio() {
   if (!server) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-8 text-center max-w-sm">
+        <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-8 text-center max-w-sm">
           <Server className="h-10 w-10 mx-auto mb-3 text-[var(--color-text-muted)]" />
           <h2 className="text-lg font-semibold mb-1">No Server Selected</h2>
           <p className="text-sm text-[var(--color-text-muted)]">
@@ -662,7 +662,7 @@ export function Portfolio() {
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3"
+              className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-4 py-3"
             >
               <div className="h-3 w-20 rounded bg-[var(--color-border)] animate-pulse mb-2" />
               <div className="h-6 w-28 rounded bg-[var(--color-border)] animate-pulse" />
@@ -670,11 +670,11 @@ export function Portfolio() {
           ))}
         </div>
         {/* Skeleton chart */}
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+        <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
           <div className="h-[250px] rounded bg-[var(--color-border)]/30 animate-pulse" />
         </div>
         {/* Skeleton table */}
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-3">
+        <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4 space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="h-4 rounded bg-[var(--color-border)] animate-pulse" style={{ width: `${85 - i * 10}%` }} />
           ))}
@@ -686,7 +686,7 @@ export function Portfolio() {
   if (error && !data) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="rounded-lg border border-red-500/30 bg-[var(--color-surface)] p-8 text-center max-w-sm">
+        <div className="rounded-none border border-red-500/30 bg-transparent p-8 text-center max-w-sm">
           <AlertCircle className="h-10 w-10 mx-auto mb-3 text-[var(--color-red)]" />
           <h2 className="text-lg font-semibold mb-1">Failed to Load Portfolio</h2>
           <p className="text-sm text-[var(--color-text-muted)]">
@@ -765,10 +765,10 @@ export function Portfolio() {
           <p>No balances found</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-[var(--color-border)]">
+        <div className="overflow-hidden rounded-none border border-[var(--color-border)] ghost-panel">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+              <tr className="border-b border-[var(--color-border)] bg-transparent">
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
                   Token
                 </th>

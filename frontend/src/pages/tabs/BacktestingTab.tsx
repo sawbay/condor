@@ -395,7 +395,7 @@ function BacktestChart({ data }: { data: BacktestData }) {
   }, [data, theme, hasPnl, hasPositionHeld]);
 
   return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-0">
+    <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4 space-y-0">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">
           Price &amp; Executors
@@ -531,7 +531,7 @@ export function BacktestingTab() {
   return (
     <div className="space-y-6">
       {/* ── Config Panel ── */}
-      <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+      <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           {/* Config selector */}
           <div>
@@ -541,7 +541,7 @@ export function BacktestingTab() {
             <div className="relative">
               <button
                 onClick={() => setConfigDropdownOpen((o) => !o)}
-                className="flex w-full items-center justify-between rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm transition-colors hover:border-[var(--color-primary)]/50 focus:border-[var(--color-primary)] focus:outline-none"
+                className="flex w-full items-center justify-between rounded-none border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] px-3 py-2 text-sm transition-colors hover:border-[var(--color-primary)]/50 focus:border-[var(--color-primary)] focus:outline-none"
               >
                 <span className={`truncate ${configId ? "" : "text-[var(--color-text-muted)]"}`}>
                   {selectedConfig
@@ -553,7 +553,7 @@ export function BacktestingTab() {
               {configDropdownOpen && configsData && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setConfigDropdownOpen(false)} />
-                  <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-60 overflow-auto rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
+                  <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-60 overflow-auto rounded-none border border-[var(--color-border)] ghost-panel bg-transparent shadow-none">
                     {configsData.configs.length === 0 && (
                       <div className="px-3 py-2 text-xs text-[var(--color-text-muted)]">
                         No configs available
@@ -567,7 +567,7 @@ export function BacktestingTab() {
                           setConfigDropdownOpen(false);
                         }}
                         className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-[var(--color-surface-hover)] ${
-                          c.id === configId ? "bg-[var(--color-primary)]/10 text-[var(--color-primary)]" : ""
+                          c.id === configId ? "bg-transparent/10 text-[var(--color-primary)]" : ""
                         }`}
                       >
                         <span className="font-medium">{c.id}</span>
@@ -594,17 +594,17 @@ export function BacktestingTab() {
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="min-w-0 flex-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1.5 text-sm focus:border-[var(--color-primary)] focus:outline-none"
+                  className="min-w-0 flex-1 rounded-none border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] px-2 py-1.5 text-sm focus:border-[var(--color-primary)] focus:outline-none"
                 />
                 <span className="text-xs text-[var(--color-text-muted)]">to</span>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="min-w-0 flex-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1.5 text-sm focus:border-[var(--color-primary)] focus:outline-none"
+                  className="min-w-0 flex-1 rounded-none border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] px-2 py-1.5 text-sm focus:border-[var(--color-primary)] focus:outline-none"
                 />
               </div>
-              <div className="flex rounded-md border border-[var(--color-border)] overflow-hidden w-fit">
+              <div className="flex rounded-none border border-[var(--color-border)] ghost-panel overflow-hidden w-fit">
                 {RANGE_PRESETS.map(({ label, days }) => (
                   <button
                     key={label}
@@ -623,14 +623,14 @@ export function BacktestingTab() {
             <label className="mb-1.5 block text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">
               Resolution
             </label>
-            <div className="flex rounded-md border border-[var(--color-border)] overflow-hidden w-fit">
+            <div className="flex rounded-none border border-[var(--color-border)] ghost-panel overflow-hidden w-fit">
               {RESOLUTIONS.map((r) => (
                 <button
                   key={r}
                   onClick={() => setResolution(r)}
                   className={`px-3 py-2 text-xs font-medium transition-colors ${
                     resolution === r
-                      ? "bg-[var(--color-primary)] text-white"
+                      ? "bg-transparent text-white"
                       : "bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
                   }`}
                 >
@@ -652,7 +652,7 @@ export function BacktestingTab() {
                 min="0"
                 value={tradeCost}
                 onChange={(e) => setTradeCost(e.target.value)}
-                className="w-24 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 py-2 text-sm tabular-nums focus:border-[var(--color-primary)] focus:outline-none"
+                className="w-24 rounded-none border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] px-2.5 py-2 text-sm tabular-nums focus:border-[var(--color-primary)] focus:outline-none"
               />
               <span className="text-xs text-[var(--color-text-muted)]">
                 ({(parseFloat(tradeCost || "0") * 100).toFixed(2)}%)
@@ -666,7 +666,7 @@ export function BacktestingTab() {
           <button
             onClick={() => submitMutation.mutate()}
             disabled={!configId || submitMutation.isPending}
-            className="flex items-center gap-2 rounded-lg bg-[var(--color-primary)] px-5 py-2.5 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 ghost-button text-sm font-semibold text-white transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {submitMutation.isPending ? (
               <Circle className="h-4 w-4 animate-spin" />
@@ -684,7 +684,7 @@ export function BacktestingTab() {
       </div>
 
       {submitMutation.isError && (
-        <div className="rounded-lg border border-[var(--color-red)]/30 bg-[var(--color-red)]/10 px-3 py-2 text-xs text-[var(--color-red)]">
+        <div className="rounded-none border border-[var(--color-red)]/30 bg-[var(--color-red)]/10 px-3 py-2 text-xs text-[var(--color-red)]">
           {(submitMutation.error as Error).message}
         </div>
       )}
@@ -704,7 +704,7 @@ export function BacktestingTab() {
           )}
 
           {!tasksLoading && (!tasks || tasks.length === 0) && (
-            <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-6 text-center text-xs text-[var(--color-text-muted)]">
+            <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-6 text-center text-xs text-[var(--color-text-muted)]">
               No backtest tasks yet
             </div>
           )}
@@ -717,10 +717,10 @@ export function BacktestingTab() {
               <button
                 key={task.task_id}
                 onClick={() => setSelectedTaskId(task.task_id)}
-                className={`group flex w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors ${
+                className={`group flex w-full items-center gap-2 rounded-none border px-3 py-2.5 text-left text-sm transition-colors ${
                   isSelected
-                    ? "border-[var(--color-primary)]/50 bg-[var(--color-primary)]/5"
-                    : "border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/30"
+                    ? "border-[var(--color-primary)]/50 bg-transparent/5"
+                    : "border-[var(--color-border)] bg-transparent hover:border-[var(--color-primary)]/30"
                 }`}
               >
                 <div className="min-w-0 flex-1">
@@ -757,14 +757,14 @@ export function BacktestingTab() {
         {/* Results panel */}
         <div className="space-y-4">
           {selectedTask?.status === "pending" || selectedTask?.status === "running" ? (
-            <div className="flex flex-col items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] py-16">
+            <div className="flex flex-col items-center justify-center rounded-none border border-[var(--color-border)] ghost-panel bg-transparent py-16">
               <Circle className="h-6 w-6 animate-spin text-[var(--color-primary)] mb-3" />
               <p className="text-sm text-[var(--color-text-muted)]">
                 Backtest {selectedTask.status}...
               </p>
             </div>
           ) : selectedTask?.status === "failed" ? (
-            <div className="rounded-lg border border-[var(--color-red)]/30 bg-[var(--color-red)]/5 p-4">
+            <div className="rounded-none border border-[var(--color-red)]/30 bg-[var(--color-red)]/5 p-4">
               <div className="flex items-center gap-2 text-sm font-medium text-[var(--color-red)]">
                 <X className="h-4 w-4" />
                 Backtest Failed
@@ -778,26 +778,26 @@ export function BacktestingTab() {
               <BacktestResults data={processed} taskConfig={selectedTask?.config as Record<string, unknown> | undefined} />
             ) : rawTaskResults ? (
               <div className="space-y-4">
-                <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+                <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
                   <h4 className="mb-3 text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">
                     Backtest Completed
                   </h4>
                   <p className="text-sm text-[var(--color-text-muted)] mb-3">
                     Results received but could not be parsed into charts. Raw data:
                   </p>
-                  <pre className="max-h-96 overflow-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-3 text-xs">
+                  <pre className="max-h-96 overflow-auto rounded-none border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] p-3 text-xs">
                     {JSON.stringify(rawTaskResults, null, 2)}
                   </pre>
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] py-16 text-[var(--color-text-muted)]">
+              <div className="flex flex-col items-center justify-center rounded-none border border-[var(--color-border)] ghost-panel bg-transparent py-16 text-[var(--color-text-muted)]">
                 <FlaskConical className="h-8 w-8 mb-3 opacity-30" />
                 <p className="text-sm">Backtest completed but no results data returned</p>
               </div>
             )
           ) : (
-            <div className="flex flex-col items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] py-16 text-[var(--color-text-muted)]">
+            <div className="flex flex-col items-center justify-center rounded-none border border-[var(--color-border)] ghost-panel bg-transparent py-16 text-[var(--color-text-muted)]">
               <FlaskConical className="h-8 w-8 mb-3 opacity-30" />
               <p className="text-sm">Select a config and run a backtest</p>
             </div>
@@ -1066,10 +1066,10 @@ function BacktestResults({ data, taskConfig }: { data: BacktestData; taskConfig?
     <div className="space-y-4">
       {/* Collapsible config header */}
       {taskConfig && (
-        <div className="rounded-lg border border-[var(--color-border)] overflow-hidden">
+        <div className="rounded-none border border-[var(--color-border)] ghost-panel overflow-hidden">
           <button
             onClick={() => setShowConfig((v) => !v)}
-            className="flex w-full items-center justify-between bg-[var(--color-surface)] px-4 py-2.5 hover:bg-[var(--color-surface-hover)] transition-colors"
+            className="flex w-full items-center justify-between bg-transparent px-4 py-2.5 hover:bg-[var(--color-surface-hover)] transition-colors"
           >
             <div className="flex items-center gap-2 min-w-0">
               <FlaskConical className="h-3.5 w-3.5 text-[var(--color-primary)] shrink-0" />
@@ -1158,7 +1158,7 @@ function BacktestResults({ data, taskConfig }: { data: BacktestData; taskConfig?
             return (
               <div
                 key={type}
-                className="flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5"
+                className="flex items-center gap-1.5 rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-2.5 py-1.5"
               >
                 <span
                   className="inline-block h-2 w-2 rounded-full"
@@ -1177,10 +1177,10 @@ function BacktestResults({ data, taskConfig }: { data: BacktestData; taskConfig?
 
       {/* Executors table */}
       {data.executors.length > 0 && (
-        <div className="rounded-lg border border-[var(--color-border)] overflow-hidden">
+        <div className="rounded-none border border-[var(--color-border)] ghost-panel overflow-hidden">
           <button
             onClick={() => setShowExecutors((v) => !v)}
-            className="flex w-full items-center justify-between bg-[var(--color-surface)] px-4 py-2.5 border-b border-[var(--color-border)] hover:bg-[var(--color-surface-hover)] transition-colors"
+            className="flex w-full items-center justify-between bg-transparent px-4 py-2.5 border-b border-[var(--color-border)] hover:bg-[var(--color-surface-hover)] transition-colors"
           >
             <h4 className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">
               Executors ({data.executors.length})
@@ -1190,7 +1190,7 @@ function BacktestResults({ data, taskConfig }: { data: BacktestData; taskConfig?
           {showExecutors && (
             <div className="max-h-80 overflow-auto">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-[var(--color-surface)]">
+                <thead className="sticky top-0 bg-transparent">
                   <tr className="border-b border-[var(--color-border)]">
                     <th className="whitespace-nowrap px-3 py-2 text-left text-xs font-medium text-[var(--color-text-muted)]">Time</th>
                     <th className="whitespace-nowrap px-3 py-2 text-left text-xs font-medium text-[var(--color-text-muted)]">Side</th>
@@ -1262,7 +1262,7 @@ function BacktestResults({ data, taskConfig }: { data: BacktestData; taskConfig?
           {showRaw ? "Hide" : "Show"} raw results
         </button>
         {showRaw && (
-          <pre className="mt-2 max-h-64 overflow-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-3 text-xs">
+          <pre className="mt-2 max-h-64 overflow-auto rounded-none border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] p-3 text-xs">
             {JSON.stringify(data.raw, null, 2)}
           </pre>
         )}
@@ -1281,7 +1281,7 @@ function StatCard({
   color?: string;
 }) {
   return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5">
+    <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-2.5">
       <div className="text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wide">
         {label}
       </div>

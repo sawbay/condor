@@ -229,7 +229,7 @@ export function OrderConfigPanel({ state, dispatch, currentPrice, isSpot = false
             {currentPrice && currentPrice > 0 && (
               <button
                 onClick={() => d({ type: "SET_FIELD", field: "price", value: currentPrice })}
-                className="flex items-center gap-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-[10px] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)]"
+                className="flex items-center gap-1 rounded border border-[var(--color-border)] ghost-panel bg-transparent px-2 py-1 text-[10px] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)]"
               >
                 <Sparkles className="h-3 w-3" />
                 Use current

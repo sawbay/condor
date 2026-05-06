@@ -36,8 +36,8 @@ function ControllerSourceViewer({
   });
 
   return (
-    <div className="rounded-lg border border-[var(--color-border)] overflow-hidden">
-      <div className="flex w-full items-center bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] transition-colors">
+    <div className="rounded-none border border-[var(--color-border)] ghost-panel overflow-hidden">
+      <div className="flex w-full items-center bg-transparent hover:bg-[var(--color-surface-hover)] transition-colors">
         <button
           className="flex flex-1 items-center gap-3 px-4 py-2.5 text-left"
           onClick={() => setExpanded(!expanded)}
@@ -52,7 +52,7 @@ function ControllerSourceViewer({
         </button>
         <button
           onClick={() => onNewConfig(controllerType, controllerName)}
-          className="flex items-center gap-1 mr-3 px-2 py-1 rounded text-xs text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors"
+          className="flex items-center gap-1 mr-3 px-2 py-1 rounded text-xs text-[var(--color-primary)] hover:bg-transparent/10 transition-colors"
           title="Create new config from this controller"
         >
           <Plus className="h-3 w-3" />
@@ -68,7 +68,7 @@ function ControllerSourceViewer({
               Loading source...
             </div>
           ) : isError ? (
-            <div className="rounded-md border border-[var(--color-red)]/40 bg-[var(--color-red)]/10 px-3 py-2 text-xs text-[var(--color-red)]">
+            <div className="rounded-none border border-[var(--color-red)]/40 bg-[var(--color-red)]/10 px-3 py-2 text-xs text-[var(--color-red)]">
               {error instanceof Error ? error.message : "Failed to load source"}
             </div>
           ) : (
@@ -178,7 +178,7 @@ function NewConfigDialog({
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[680px] md:max-h-[80vh] bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl shadow-xl z-50 flex flex-col">
+      <div className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[680px] md:max-h-[80vh] bg-[var(--color-bg)] border border-[var(--color-border)] ghost-panel rounded-none shadow-none z-50 flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
           <div>
@@ -204,7 +204,7 @@ function NewConfigDialog({
               value={configId}
               onChange={(e) => setConfigId(e.target.value)}
               placeholder="e.g. my_strategy_v1"
-              className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm focus:border-[var(--color-primary)] focus:outline-none"
+              className="w-full rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-2 text-sm focus:border-[var(--color-primary)] focus:outline-none"
             />
           </div>
 
@@ -227,10 +227,10 @@ function NewConfigDialog({
                   {field.type === "boolean" || field.type === "bool" ? (
                     <button
                       onClick={() => updateField(field.name, !fieldValues[field.name])}
-                      className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
+                      className={`rounded-none border px-3 py-1.5 text-sm transition-colors ${
                         fieldValues[field.name]
-                          ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
-                          : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)]"
+                          ? "border-[var(--color-primary)] bg-transparent/10 text-[var(--color-primary)]"
+                          : "border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)]"
                       }`}
                     >
                       {fieldValues[field.name] ? "true" : "false"}
@@ -241,14 +241,14 @@ function NewConfigDialog({
                       step="any"
                       value={String(fieldValues[field.name] ?? "")}
                       onChange={(e) => updateField(field.name, e.target.value ? Number(e.target.value) : undefined)}
-                      className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-sm tabular-nums focus:border-[var(--color-primary)] focus:outline-none"
+                      className="w-full rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-1.5 text-sm tabular-nums focus:border-[var(--color-primary)] focus:outline-none"
                     />
                   ) : (
                     <input
                       type="text"
                       value={String(fieldValues[field.name] ?? "")}
                       onChange={(e) => updateField(field.name, e.target.value)}
-                      className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-sm focus:border-[var(--color-primary)] focus:outline-none"
+                      className="w-full rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-1.5 text-sm focus:border-[var(--color-primary)] focus:outline-none"
                     />
                   )}
                 </div>
@@ -266,14 +266,14 @@ function NewConfigDialog({
           )}
           <button
             onClick={onClose}
-            className="rounded-md px-3 py-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+            className="rounded-none px-3 py-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={() => createMutation.mutate()}
             disabled={!configId.trim() || createMutation.isPending}
-            className="flex items-center gap-1.5 rounded-md bg-[var(--color-primary)] px-4 py-1.5 text-sm font-medium text-white transition-all disabled:opacity-40"
+            className="flex items-center gap-1.5 ghost-button text-sm font-medium text-white transition-all disabled:opacity-40"
           >
             {createMutation.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
             Create Config
@@ -361,7 +361,7 @@ export function ControllersTab() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Filter controllers..."
-          className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] pl-10 pr-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]/50 outline-none transition-colors focus:border-[var(--color-primary)]"
+          className="w-full rounded-none border border-[var(--color-border)] ghost-panel bg-transparent pl-10 pr-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]/50 outline-none transition-colors focus:border-[var(--color-primary)]"
         />
       </div>
 

@@ -34,7 +34,7 @@ export function Login() {
 
   return (
     <div className="flex h-screen items-center justify-center">
-      <div className="w-full max-w-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 text-center">
+      <div className="w-full max-w-sm rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-8 text-center">
         <img src="/condor_old.jpeg" alt="Condor" className="mx-auto mb-4 h-16 w-16 rounded-full" />
         <h1 className="mb-2 text-2xl font-bold">Condor</h1>
         {loggingIn ? (

@@ -95,7 +95,7 @@ export function ConfigEditor({
 
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-[var(--color-border)] p-4">
+      <div className="rounded-none border border-[var(--color-border)] ghost-panel p-4">
         <div className="flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-primary)]" />
           Loading {configId}...
@@ -105,10 +105,10 @@ export function ConfigEditor({
   }
 
   return (
-    <div className={`rounded-lg border overflow-hidden transition-colors ${isDirty ? "border-[var(--color-warning)]/60" : "border-[var(--color-border)]"}`}>
+    <div className={`rounded-none border overflow-hidden transition-colors ${isDirty ? "border-[var(--color-warning)]/60" : "border-[var(--color-border)]"}`}>
       {/* Header */}
       <button
-        className="flex w-full items-center gap-2 px-4 py-3 text-left bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] transition-colors"
+        className="flex w-full items-center gap-2 px-4 py-3 text-left bg-transparent hover:bg-[var(--color-surface-hover)] transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
         {expanded ? (
@@ -171,15 +171,15 @@ export function ConfigEditor({
                           const current = isEdited ? edits[key] === "true" : Boolean(originalValue);
                           handleEdit(key, String(!current));
                         }}
-                        className={`flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs transition-colors ${
+                        className={`flex items-center gap-2 rounded-none border px-3 py-1.5 text-xs transition-colors ${
                           (isEdited ? edits[key] === "true" : Boolean(originalValue))
-                            ? "border-[var(--color-primary)]/40 bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
-                            : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)]"
+                            ? "border-[var(--color-primary)]/40 bg-transparent/10 text-[var(--color-primary)]"
+                            : "border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)]"
                         }`}
                       >
                         <div className={`h-3 w-3 rounded-sm border flex items-center justify-center ${
                           (isEdited ? edits[key] === "true" : Boolean(originalValue))
-                            ? "border-[var(--color-primary)] bg-[var(--color-primary)]"
+                            ? "border-[var(--color-primary)] bg-transparent"
                             : "border-[var(--color-border)]"
                         }`}>
                           {(isEdited ? edits[key] === "true" : Boolean(originalValue)) && (
@@ -193,7 +193,7 @@ export function ConfigEditor({
                         value={displayValue}
                         onChange={(e) => handleEdit(key, e.target.value)}
                         rows={Math.min(6, displayValue.split("\n").length + 1)}
-                        className={`w-full rounded-md border bg-[var(--color-bg)] px-2.5 py-1.5 font-mono text-xs text-[var(--color-text)] outline-none transition-colors focus:border-[var(--color-primary)] resize-y ${
+                        className={`w-full rounded-none border bg-[var(--color-bg)] px-2.5 py-1.5 font-mono text-xs text-[var(--color-text)] outline-none transition-colors focus:border-[var(--color-primary)] resize-y ${
                           isEdited ? "border-[var(--color-warning)]/60" : "border-[var(--color-border)]"
                         }`}
                       />
@@ -203,7 +203,7 @@ export function ConfigEditor({
                         step={inputType === "number" ? "any" : undefined}
                         value={displayValue}
                         onChange={(e) => handleEdit(key, e.target.value)}
-                        className={`w-full rounded-md border bg-[var(--color-bg)] px-2.5 py-1.5 text-xs text-[var(--color-text)] outline-none transition-colors focus:border-[var(--color-primary)] ${
+                        className={`w-full rounded-none border bg-[var(--color-bg)] px-2.5 py-1.5 text-xs text-[var(--color-text)] outline-none transition-colors focus:border-[var(--color-primary)] ${
                           inputType === "number" ? "font-mono tabular-nums" : ""
                         } ${isEdited ? "border-[var(--color-warning)]/60" : "border-[var(--color-border)]"}`}
                       />
@@ -425,7 +425,7 @@ export function DeployBotDialog({
       onClick={handleClose}
     >
       <div
-        className="w-full max-w-2xl max-h-[85vh] flex flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl"
+        className="w-full max-w-2xl max-h-[85vh] flex flex-col rounded-none border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] shadow-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -464,7 +464,7 @@ export function DeployBotDialog({
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Filter configs..."
-                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] pl-10 pr-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]/50 outline-none transition-colors focus:border-[var(--color-primary)]"
+                  className="w-full rounded-none border border-[var(--color-border)] ghost-panel bg-transparent pl-10 pr-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]/50 outline-none transition-colors focus:border-[var(--color-primary)]"
                   autoFocus
                 />
               </div>
@@ -485,10 +485,10 @@ export function DeployBotDialog({
                     return (
                       <div
                         key={type}
-                        className="rounded-lg border border-[var(--color-border)] overflow-hidden"
+                        className="rounded-none border border-[var(--color-border)] ghost-panel overflow-hidden"
                       >
                         <button
-                          className="flex w-full items-center gap-2 px-4 py-2.5 text-left bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] transition-colors"
+                          className="flex w-full items-center gap-2 px-4 py-2.5 text-left bg-transparent hover:bg-[var(--color-surface-hover)] transition-colors"
                           onClick={() => toggleType(type)}
                         >
                           {isTypeExpanded ? (
@@ -513,7 +513,7 @@ export function DeployBotDialog({
                                 <div key={cfg.id}>
                                   <div
                                     className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors hover:bg-[var(--color-surface-hover)]/50 ${
-                                      isSelected ? "bg-[var(--color-primary)]/5" : ""
+                                      isSelected ? "bg-transparent/5" : ""
                                     }`}
                                   >
                                     <input
@@ -607,7 +607,7 @@ export function DeployBotDialog({
                       type="text"
                       value={botName}
                       onChange={(e) => setBotName(e.target.value)}
-                      className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] outline-none transition-colors focus:border-[var(--color-primary)]"
+                      className="w-full rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-2 text-sm text-[var(--color-text)] outline-none transition-colors focus:border-[var(--color-primary)]"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -619,7 +619,7 @@ export function DeployBotDialog({
                         type="text"
                         value={accountName}
                         onChange={(e) => setAccountName(e.target.value)}
-                        className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] outline-none transition-colors focus:border-[var(--color-primary)]"
+                        className="w-full rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-2 text-sm text-[var(--color-text)] outline-none transition-colors focus:border-[var(--color-primary)]"
                       />
                     </div>
                     <div>
@@ -630,7 +630,7 @@ export function DeployBotDialog({
                         type="text"
                         value={image}
                         onChange={(e) => setImage(e.target.value)}
-                        className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] outline-none transition-colors focus:border-[var(--color-primary)]"
+                        className="w-full rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-2 text-sm text-[var(--color-text)] outline-none transition-colors focus:border-[var(--color-primary)]"
                       />
                     </div>
                   </div>
@@ -644,7 +644,7 @@ export function DeployBotDialog({
                         value={maxGlobalDrawdown}
                         onChange={(e) => setMaxGlobalDrawdown(e.target.value)}
                         placeholder="Optional"
-                        className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]/50 outline-none transition-colors focus:border-[var(--color-primary)]"
+                        className="w-full rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]/50 outline-none transition-colors focus:border-[var(--color-primary)]"
                       />
                     </div>
                     <div>
@@ -656,7 +656,7 @@ export function DeployBotDialog({
                         value={maxControllerDrawdown}
                         onChange={(e) => setMaxControllerDrawdown(e.target.value)}
                         placeholder="Optional"
-                        className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]/50 outline-none transition-colors focus:border-[var(--color-primary)]"
+                        className="w-full rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]/50 outline-none transition-colors focus:border-[var(--color-primary)]"
                       />
                     </div>
                   </div>
@@ -664,7 +664,7 @@ export function DeployBotDialog({
               </div>
 
               {deployError && (
-                <div className="rounded-lg border border-[var(--color-red)]/40 bg-[var(--color-red)]/10 px-4 py-3">
+                <div className="rounded-none border border-[var(--color-red)]/40 bg-[var(--color-red)]/10 px-4 py-3">
                   <p className="text-sm text-[var(--color-red)]">{deployError}</p>
                   <button
                     onClick={() => { setDeployError(null); deployMutation.mutate(); }}
@@ -690,7 +690,7 @@ export function DeployBotDialog({
           <div className="flex gap-3">
             <button
               onClick={handleClose}
-              className="rounded-lg px-4 py-2 text-sm text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
+              className="rounded-none px-4 py-2 text-sm text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
             >
               Cancel
             </button>
@@ -698,7 +698,7 @@ export function DeployBotDialog({
               <button
                 onClick={() => setStep(2)}
                 disabled={selected.size === 0}
-                className="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white transition-opacity disabled:opacity-40"
+                className="ghost-button disabled:opacity-40"
               >
                 Next
               </button>
@@ -706,7 +706,7 @@ export function DeployBotDialog({
               <button
                 onClick={() => deployMutation.mutate()}
                 disabled={!botName.trim() || deployMutation.isPending}
-                className="flex items-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white transition-opacity disabled:opacity-40"
+                className="flex items-center gap-2 ghost-button disabled:opacity-40"
               >
                 <Rocket className="h-4 w-4" />
                 {deployMutation.isPending

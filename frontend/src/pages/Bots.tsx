@@ -58,14 +58,14 @@ export function Bots() {
 
   return (
     <div className="space-y-6">
-      <div className="flex w-fit items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-1">
+      <div className="flex w-fit items-center gap-1 rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-1">
         {TABS.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 rounded-none px-3 py-1.5 text-sm font-medium transition-colors ${
               currentTab === key
-                ? "bg-[var(--color-bg)] text-[var(--color-text)] shadow-sm"
+                ? "bg-[var(--color-bg)] text-[var(--color-text)] shadow-none"
                 : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
             }`}
           >

@@ -47,10 +47,10 @@ export function SessionSelector({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 text-left text-sm transition-colors hover:border-[var(--color-primary)]/50 focus:border-[var(--color-primary)] focus:outline-none"
+        className="flex w-full items-center justify-between gap-2 rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-2.5 text-left text-sm transition-colors hover:border-[var(--color-primary)]/50 focus:border-[var(--color-primary)] focus:outline-none"
       >
         <div className="flex items-center gap-2.5 overflow-hidden">
-          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-[var(--color-primary)]/10 text-xs font-bold text-[var(--color-primary)]">
+          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-none bg-transparent/10 text-xs font-bold text-[var(--color-primary)]">
             {selected?.number ?? "–"}
           </div>
           <div className="min-w-0">
@@ -66,7 +66,7 @@ export function SessionSelector({
       </button>
 
       {open && (
-        <div className="absolute left-0 z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
+        <div className="absolute left-0 z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-none border border-[var(--color-border)] ghost-panel bg-transparent shadow-none">
           {sortedSessions.map((s) => {
             const isActive = s.number === selectedSessionNum;
             return (
@@ -76,12 +76,12 @@ export function SessionSelector({
                 onClick={() => { onSelect(s.number); setOpen(false); }}
                 className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm transition-colors ${
                   isActive
-                    ? "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
+                    ? "bg-transparent/10 text-[var(--color-primary)]"
                     : "text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]"
                 }`}
               >
-                <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-xs font-bold ${
-                  isActive ? "bg-[var(--color-primary)]/20 text-[var(--color-primary)]" : "bg-[var(--color-border)]/50 text-[var(--color-text-muted)]"
+                <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-none text-xs font-bold ${
+                  isActive ? "bg-transparent/20 text-[var(--color-primary)]" : "bg-[var(--color-border)]/50 text-[var(--color-text-muted)]"
                 }`}>
                   {s.number}
                 </div>
@@ -91,7 +91,7 @@ export function SessionSelector({
                     {s.created_at ?? "Unknown"} · {s.snapshot_count} tick{s.snapshot_count !== 1 ? "s" : ""}
                   </div>
                 </div>
-                {isActive && <div className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[var(--color-primary)]" />}
+                {isActive && <div className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-transparent" />}
               </button>
             );
           })}
@@ -135,7 +135,7 @@ export function SessionMetricsBar({
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
       {stats.map((s) => (
-        <div key={s.label} className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+        <div key={s.label} className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-3">
           <span className="block text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">{s.label}</span>
           <span className={`text-lg font-semibold ${s.color}`}>{s.value}</span>
         </div>
@@ -185,7 +185,7 @@ export function SessionsTab({
 
   if (sessions.length === 0) {
     return (
-      <div className="flex h-48 flex-col items-center justify-center rounded-lg border border-dashed border-[var(--color-border)] text-[var(--color-text-muted)]">
+      <div className="flex h-48 flex-col items-center justify-center rounded-none border border-dashed border-[var(--color-border)] text-[var(--color-text-muted)]">
         <Clock className="mb-2 h-8 w-8 opacity-30" />
         <p className="text-sm">No sessions yet. Start the agent to create one.</p>
       </div>
@@ -206,14 +206,14 @@ export function SessionsTab({
       {parsedJournal && <SessionMetricsBar journal={parsedJournal} perf={sessionPerf} />}
 
       {/* Sub-tab bar */}
-      <div className="flex gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-1">
+      <div className="flex gap-1 rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-1">
         {SESSION_SUB_TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => setActiveSubTab(id)}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 rounded-none px-3 py-1.5 text-xs font-medium transition-all ${
               activeSubTab === id
-                ? "bg-[var(--color-primary)]/15 text-[var(--color-primary)]"
+                ? "bg-transparent/15 text-[var(--color-primary)]"
                 : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
             }`}
           >

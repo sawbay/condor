@@ -135,7 +135,7 @@ export function AgentPnlChart({ data, height = 180, title }: AgentPnlChartProps)
   if (data.length === 0) return null;
 
   return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
+    <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent overflow-hidden">
       {title && (
         <div className="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5">
           <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">{title}</p>

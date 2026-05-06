@@ -117,7 +117,7 @@ export function PairSelector({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Trading pair (e.g. BTC-USDT)"
-        className="w-44 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-sm focus:border-[var(--color-primary)] focus:outline-none"
+        className="w-44 rounded-none border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] px-3 py-1.5 text-sm focus:border-[var(--color-primary)] focus:outline-none"
       />
     );
   }
@@ -145,7 +145,7 @@ export function PairSelector({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-72 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl shadow-black/40">
+        <div className="absolute left-0 top-full z-50 mt-1 w-72 rounded-none border border-[var(--color-border)] ghost-panel bg-transparent shadow-none shadow-black/40">
           {/* Search input */}
           <div className="flex items-center gap-2 border-b border-[var(--color-border)] px-3 py-2">
             <Search className="h-3.5 w-3.5 text-[var(--color-text-muted)]" />
@@ -202,7 +202,7 @@ export function PairSelector({
                     }}
                     className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm ${
                       i === activeIndex
-                        ? "bg-[var(--color-primary)]/10 text-[var(--color-text)]"
+                        ? "bg-transparent/10 text-[var(--color-text)]"
                         : p === value
                           ? "text-[var(--color-primary)]"
                           : "text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]"

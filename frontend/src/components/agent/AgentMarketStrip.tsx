@@ -26,14 +26,14 @@ export function AgentMarketStrip({ serverName, executors }: AgentMarketStripProp
   if (!serverName || pairs.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5">
+    <div className="flex flex-wrap items-center gap-4 rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-4 py-2.5">
       {pairs.map(({ connector, pair }) => (
         <div key={`${connector}:${pair}`} className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
-            <span className="rounded-md bg-[var(--color-primary)]/10 px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-primary)]">
+            <span className="rounded-none bg-transparent/10 px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-primary)]">
               {pair}
             </span>
-            <span className="rounded-md bg-[var(--color-surface-hover)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-text-muted)]">
+            <span className="rounded-none bg-[var(--color-surface-hover)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-text-muted)]">
               {connector}
             </span>
           </div>

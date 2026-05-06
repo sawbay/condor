@@ -572,7 +572,7 @@ export function GridChart({
           </p>
         )}
         {activePickField && (
-          <span className="animate-pulse rounded bg-[var(--color-primary)]/20 px-2 py-0.5 text-xs text-[var(--color-primary)]">
+          <span className="animate-pulse rounded bg-transparent/20 px-2 py-0.5 text-xs text-[var(--color-primary)]">
             Pick mode: {activePickField}
           </span>
         )}

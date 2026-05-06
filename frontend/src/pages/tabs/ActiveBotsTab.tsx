@@ -133,7 +133,7 @@ function StatCard({
   valueColor?: string;
 }) {
   return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+    <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-4 py-3">
       <div className="flex items-center gap-2 mb-1">
         <Icon className="h-3.5 w-3.5 text-[var(--color-text-muted)]" />
         <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider">
@@ -222,7 +222,7 @@ function PositionCard({ pos }: { pos: Record<string, unknown> }) {
   const secondaryEntries = Object.entries(pos).filter(([k]) => !primaryKeys.has(k));
 
   return (
-    <div className="rounded-lg border border-[var(--color-border)]/60 bg-[var(--color-bg)] p-3 space-y-2">
+    <div className="rounded-none border border-[var(--color-border)] ghost-panel/60 bg-[var(--color-bg)] p-3 space-y-2">
       <div className="flex items-center gap-2 text-sm">
         {connector && (
           <span className="text-[var(--color-text-muted)]">{connector}</span>
@@ -318,11 +318,11 @@ function DetailPanel({
     <>
       <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} />
       <div
-        className="fixed top-0 right-0 h-full bg-[var(--color-bg)] border-l border-[var(--color-border)] z-50 overflow-y-auto shadow-xl"
+        className="fixed top-0 right-0 h-full bg-[var(--color-bg)] border-l border-[var(--color-border)] z-50 overflow-y-auto shadow-none"
         style={{ width: panelWidth }}
       >
         <div
-          className="absolute top-0 left-0 w-1.5 h-full cursor-col-resize hover:bg-[var(--color-primary)]/30 transition-colors z-10"
+          className="absolute top-0 left-0 w-1.5 h-full cursor-col-resize hover:bg-transparent/30 transition-colors z-10"
           onMouseDown={onMouseDown}
         />
 
@@ -361,7 +361,7 @@ function DetailPanel({
           </div>
 
           {/* PnL Breakdown */}
-          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-3">
+          <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4 space-y-3">
             <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
               PnL Breakdown
             </h3>
@@ -402,7 +402,7 @@ function DetailPanel({
 
           {/* Close Type Counts */}
           {Object.keys(ctrl.close_type_counts).length > 0 && (
-            <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-2">
+            <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4 space-y-2">
               <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
                 Close Types
               </h3>
@@ -410,7 +410,7 @@ function DetailPanel({
                 {Object.entries(ctrl.close_type_counts).map(([type, count]) => (
                   <span
                     key={type}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-[var(--color-bg)] px-2.5 py-1 text-xs border border-[var(--color-border)]/50"
+                    className="inline-flex items-center gap-1.5 rounded-none bg-[var(--color-bg)] px-2.5 py-1 text-xs border border-[var(--color-border)] ghost-panel/50"
                   >
                     <span className="text-[var(--color-text-muted)]">{type}</span>
                     <span className="font-semibold">{count}</span>
@@ -474,7 +474,7 @@ function BotsSection({ bots, server }: { bots: BotSummary[]; server: string }) {
   });
 
   return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
+    <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent">
       <button
         className="flex w-full items-center gap-2 px-4 py-3 text-left hover:bg-[var(--color-surface-hover)] transition-colors"
         onClick={() => setExpanded(!expanded)}
@@ -623,7 +623,7 @@ export function ActiveBotsTab() {
   if (!serverOnline) {
     return (
       <div className="space-y-6">
-        <div className="rounded-lg border border-[var(--color-yellow)]/40 bg-[var(--color-yellow)]/10 px-4 py-3">
+        <div className="rounded-none border border-[var(--color-yellow)]/40 bg-[var(--color-yellow)]/10 px-4 py-3">
           <p className="text-sm font-medium text-[var(--color-yellow)]">
             Unable to reach server
           </p>
@@ -641,7 +641,7 @@ export function ActiveBotsTab() {
       <div className="flex items-center justify-end">
         <button
           onClick={() => setShowDeploy(true)}
-          className="flex items-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white transition-all hover:shadow-lg hover:shadow-[var(--color-primary)]/20"
+          className="flex items-center gap-2 ghost-button shadow-none hover:shadow-[var(--color-primary)]/20"
         >
           <Rocket className="h-4 w-4" />
           Deploy Bot
@@ -670,11 +670,11 @@ export function ActiveBotsTab() {
         <>
           {/* Controllers table */}
           {runningControllers.length > 0 && (
-            <div className="overflow-hidden rounded-lg border border-[var(--color-border)]">
+            <div className="overflow-hidden rounded-none border border-[var(--color-border)] ghost-panel">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+                    <tr className="border-b border-[var(--color-border)] bg-transparent">
                       <SortHeader label="Controller" sortKey="controller_name" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} />
                       <SortHeader label="Connector" sortKey="connector" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} />
                       <SortHeader label="Pair" sortKey="trading_pair" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} />

@@ -70,13 +70,13 @@ export function StartSessionDialog({
   if (!open) return null;
 
   const inputClass =
-    "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] outline-none transition-colors focus:border-[var(--color-primary)]";
+    "w-full rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-2 text-sm text-[var(--color-text)] outline-none transition-colors focus:border-[var(--color-primary)]";
   const labelClass = "mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-6 shadow-2xl"
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-none border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] p-6 shadow-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -90,7 +90,7 @@ export function StartSessionDialog({
           {/* Execution Mode */}
           <div>
             <label className={labelClass}>Execution Mode</label>
-            <div className="flex gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-1">
+            <div className="flex gap-1 rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-1">
               {([
                 { value: "dry_run", label: "Dry Run", desc: "Simulate" },
                 { value: "run_once", label: "Run Once", desc: "Single tick" },
@@ -100,7 +100,7 @@ export function StartSessionDialog({
                   key={opt.value}
                   type="button"
                   onClick={() => setExecutionMode(opt.value)}
-                  className={`flex-1 rounded-md px-3 py-2 text-center text-xs font-medium transition-all ${
+                  className={`flex-1 rounded-none px-3 py-2 text-center text-xs font-medium transition-all ${
                     executionMode === opt.value
                       ? opt.value === "dry_run"
                         ? "bg-blue-500/15 text-blue-400"
@@ -231,14 +231,14 @@ export function StartSessionDialog({
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
+            className="rounded-none px-4 py-2 text-sm text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
           >
             Cancel
           </button>
           <button
             onClick={() => startMut.mutate()}
             disabled={startMut.isPending}
-            className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-white transition-all disabled:opacity-40 ${
+            className={`flex items-center gap-1.5 rounded-none px-4 py-2 text-sm font-medium text-white transition-all disabled:opacity-40 ${
               executionMode === "dry_run" ? "bg-blue-600 hover:bg-blue-500" : executionMode === "run_once" ? "bg-amber-600 hover:bg-amber-500" : "bg-emerald-600 hover:bg-emerald-500"
             }`}
           >
@@ -284,7 +284,7 @@ export function AgentControls({ slug, status, defaultContext, agentConfig }: { s
         {status === "idle" || status === "stopped" ? (
           <button
             onClick={() => setShowStartDialog(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-emerald-500"
+            className="flex items-center gap-1.5 rounded-none bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-emerald-500"
           >
             <Play className="h-3.5 w-3.5" /> Start
           </button>
@@ -293,14 +293,14 @@ export function AgentControls({ slug, status, defaultContext, agentConfig }: { s
             <button
               onClick={() => pauseMut.mutate()}
               disabled={loading}
-              className="flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-400 transition-all hover:bg-amber-500/20 disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-none border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-400 transition-all hover:bg-amber-500/20 disabled:opacity-40"
             >
               <Pause className="h-3.5 w-3.5" /> Pause
             </button>
             <button
               onClick={() => stopMut.mutate()}
               disabled={loading}
-              className="flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400 transition-all hover:bg-red-500/20 disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-none border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400 transition-all hover:bg-red-500/20 disabled:opacity-40"
             >
               <Square className="h-3.5 w-3.5" /> Stop
             </button>
@@ -310,14 +310,14 @@ export function AgentControls({ slug, status, defaultContext, agentConfig }: { s
             <button
               onClick={() => resumeMut.mutate()}
               disabled={loading}
-              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-emerald-500 disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-none bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-emerald-500 disabled:opacity-40"
             >
               <Play className="h-3.5 w-3.5" /> Resume
             </button>
             <button
               onClick={() => stopMut.mutate()}
               disabled={loading}
-              className="flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400 transition-all hover:bg-red-500/20 disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-none border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400 transition-all hover:bg-red-500/20 disabled:opacity-40"
             >
               <Square className="h-3.5 w-3.5" /> Stop
             </button>

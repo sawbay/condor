@@ -91,7 +91,7 @@ export function CodeEditor({
   return (
     <div
       ref={containerRef}
-      className="rounded-md border border-[var(--color-border)] overflow-hidden"
+      className="rounded-none border border-[var(--color-border)] ghost-panel overflow-hidden"
     />
   );
 }

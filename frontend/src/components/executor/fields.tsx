@@ -79,8 +79,8 @@ export function PriceField({
           }
           className={`flex items-center rounded border px-2 transition-colors ${
             isActive
-              ? "border-[var(--color-primary)] bg-[var(--color-primary)]/20 text-[var(--color-primary)]"
-              : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
+              ? "border-[var(--color-primary)] bg-transparent/20 text-[var(--color-primary)]"
+              : "border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
           }`}
           title="Pick from chart"
         >
@@ -140,7 +140,7 @@ export function NumberField({
           }}
           onBlur={() => setLocalValue(displayValue === 0 ? "" : String(displayValue))}
           placeholder="0"
-          className="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 py-1.5 font-mono text-xs text-[var(--color-text)] placeholder:text-[var(--color-text-muted)]/40 focus:border-[var(--color-primary)] focus:outline-none"
+          className="flex-1 rounded border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] px-2.5 py-1.5 font-mono text-xs text-[var(--color-text)] placeholder:text-[var(--color-text-muted)]/40 focus:border-[var(--color-primary)] focus:outline-none"
         />
         {suffix && (
           <span className="text-[10px] text-[var(--color-text-muted)]">{suffix}</span>
@@ -187,13 +187,13 @@ export function SelectField({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-xs text-[var(--color-text)] transition-colors hover:bg-[var(--color-surface-hover)]"
+        className="flex w-full items-center justify-between rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-2.5 py-1.5 text-xs text-[var(--color-text)] transition-colors hover:bg-[var(--color-surface-hover)]"
       >
         <span>{selected?.label}</span>
         <ChevronDown className={`h-3.5 w-3.5 text-[var(--color-text-muted)] transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-        <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
+        <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-none border border-[var(--color-border)] ghost-panel bg-transparent shadow-none">
           {options.map((opt) => {
             const isActive = opt.value === value;
             return (
@@ -207,11 +207,11 @@ export function SelectField({
                 }}
                 className={`flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-xs transition-colors ${
                   isActive
-                    ? "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
+                    ? "bg-transparent/10 text-[var(--color-primary)]"
                     : "text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]"
                 }`}
               >
-                {isActive && <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-primary)]" />}
+                {isActive && <span className="h-1.5 w-1.5 rounded-full bg-transparent" />}
                 <span className={isActive ? "" : "ml-3.5"}>{opt.label}</span>
               </button>
             );
@@ -240,7 +240,7 @@ export function ToggleField({
       <button
         onClick={() => dispatch({ type: "SET_FIELD", field, value: !value })}
         className={`relative h-5 w-9 rounded-full transition-colors ${
-          value ? "bg-[var(--color-primary)]" : "bg-[var(--color-border)]"
+          value ? "bg-transparent" : "bg-[var(--color-border)]"
         }`}
       >
         <span
@@ -386,11 +386,11 @@ export function AmountField({
           onChange={handleChange}
           onBlur={() => setLocalValue(displayValue === 0 ? "" : String(Number(displayValue.toPrecision(8))))}
           placeholder="0"
-          className="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 py-1.5 font-mono text-xs text-[var(--color-text)] placeholder:text-[var(--color-text-muted)]/40 focus:border-[var(--color-primary)] focus:outline-none"
+          className="flex-1 rounded border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] px-2.5 py-1.5 font-mono text-xs text-[var(--color-text)] placeholder:text-[var(--color-text-muted)]/40 focus:border-[var(--color-primary)] focus:outline-none"
         />
         <button
           onClick={toggleUnit}
-          className="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1.5 text-[10px] font-medium text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)]"
+          className="rounded border border-[var(--color-border)] ghost-panel bg-transparent px-2 py-1.5 text-[10px] font-medium text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)]"
           title={`Switch to ${inQuote ? baseAsset : quoteAsset}`}
         >
           {inQuote ? quoteAsset : baseAsset}
@@ -423,7 +423,7 @@ export function LeverageField({
             type="text"
             value="1"
             disabled
-            className="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 py-1.5 font-mono text-xs text-[var(--color-text-muted)] opacity-60"
+            className="flex-1 rounded border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] px-2.5 py-1.5 font-mono text-xs text-[var(--color-text-muted)] opacity-60"
           />
           <span className="text-[10px] text-[var(--color-text-muted)]">x (spot)</span>
         </div>
@@ -458,7 +458,7 @@ export function SideSelector({ side, dispatch }: { side: 1 | 2; dispatch: FieldD
             className={`flex-1 rounded py-2 text-xs font-bold transition-colors ${
               side === opt.value
                 ? `bg-[${opt.color}] text-white`
-                : "bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
+                : "bg-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
             }`}
             style={side === opt.value ? { backgroundColor: opt.color } : undefined}
           >

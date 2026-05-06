@@ -399,7 +399,7 @@ export function MarketData() {
   return (
     <div className="flex h-full flex-col">
       {/* ── Top Bar: Exchange-style header ── */}
-      <div className="flex items-center border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="flex items-center border-b border-[var(--color-border)] bg-transparent">
         {/* Left: Pair selector + Exchange selector */}
         <div className="flex items-center border-r border-[var(--color-border)]">
           <PairSelector
@@ -427,14 +427,14 @@ export function MarketData() {
         {/* Right: Interval + Range (lightweight fallback only) */}
         {!tvAvailable && tvChecked && (
           <div className="flex items-center gap-3 border-l border-[var(--color-border)] px-4 py-2">
-            <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]">
+            <div className="flex overflow-hidden rounded-none border border-[var(--color-border)] ghost-panel">
               {INTERVALS.map((iv) => (
                 <button
                   key={iv}
                   onClick={() => setInterval(iv)}
                   className={`px-2.5 py-1 text-xs ${
                     interval === iv
-                      ? "bg-[var(--color-primary)] text-white"
+                      ? "bg-transparent text-white"
                       : "bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
                   }`}
                 >
@@ -445,14 +445,14 @@ export function MarketData() {
 
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] text-[var(--color-text-muted)]">Range:</span>
-              <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]">
+              <div className="flex overflow-hidden rounded-none border border-[var(--color-border)] ghost-panel">
                 {LOOKBACK_OPTIONS.map((opt) => (
                   <button
                     key={opt.label}
                     onClick={() => setLookbackSeconds(opt.seconds)}
                     className={`px-2 py-1 text-xs ${
                       lookbackSeconds === opt.seconds
-                        ? "bg-[var(--color-primary)] text-white"
+                        ? "bg-transparent text-white"
                         : "bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
                     }`}
                   >
@@ -469,7 +469,7 @@ export function MarketData() {
       <div className="flex min-h-0 flex-1">
         {/* Chart */}
         <div className="min-w-0 flex-1 border-r border-[var(--color-border)]">
-          <div className="h-full overflow-hidden rounded-none border-0 bg-[var(--color-surface)]">
+          <div className="h-full overflow-hidden rounded-none border-0 bg-transparent">
             {tvAvailable ? (
               <TradingViewChart
                 key={`${server}:${connector}`}
@@ -496,7 +496,7 @@ export function MarketData() {
         </div>
 
         {/* Order Book + Recent Trades */}
-        <div className="flex w-72 shrink-0 flex-col bg-[var(--color-surface)] xl:w-80">
+        <div className="flex w-72 shrink-0 flex-col bg-transparent xl:w-80">
           <div className="flex-[3] overflow-hidden">
             <OrderBook server={server} connector={connector} pair={pair} />
           </div>

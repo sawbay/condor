@@ -31,7 +31,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="flex h-full items-center justify-center">
-          <div className="w-full max-w-md rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-6 text-center">
+          <div className="w-full max-w-md rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-6 text-center">
             <h2 className="mb-2 text-lg font-semibold text-[var(--color-red)]">
               Something went wrong
             </h2>
@@ -40,7 +40,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </p>
             <button
               onClick={() => this.setState({ hasError: false, error: null })}
-              className="rounded-md bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90"
+              className="ghost-button disabled:opacity-90"
             >
               Try Again
             </button>

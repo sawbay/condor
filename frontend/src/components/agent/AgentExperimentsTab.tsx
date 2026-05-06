@@ -23,7 +23,7 @@ export function ExperimentsTab({ slug, experiments }: { slug: string; experiment
 
   if (experiments.length === 0) {
     return (
-      <div className="flex h-48 flex-col items-center justify-center rounded-lg border border-dashed border-[var(--color-border)] text-[var(--color-text-muted)]">
+      <div className="flex h-48 flex-col items-center justify-center rounded-none border border-dashed border-[var(--color-border)] text-[var(--color-text-muted)]">
         <FlaskConical className="mb-2 h-8 w-8 opacity-30" />
         <p className="text-sm">No experiments yet. Run a dry-run or run-once to create one.</p>
       </div>
@@ -34,7 +34,7 @@ export function ExperimentsTab({ slug, experiments }: { slug: string; experiment
     <div className="flex flex-col gap-4 lg:flex-row">
       {/* Experiment list */}
       <div className="w-full shrink-0 lg:w-80">
-        <div className="max-h-[700px] space-y-1 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-2">
+        <div className="max-h-[700px] space-y-1 overflow-y-auto rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-2">
           {experiments.map((exp) => {
             const isActive = exp.number === selectedExpNum;
             const modeLabel = exp.execution_mode === "dry_run" ? "Dry Run" : exp.execution_mode === "run_once" ? "Run Once" : exp.execution_mode;
@@ -45,14 +45,14 @@ export function ExperimentsTab({ slug, experiments }: { slug: string; experiment
               <button
                 key={exp.number}
                 onClick={() => setSelectedExpNum(exp.number)}
-                className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors ${
+                className={`flex w-full items-center gap-3 rounded-none px-3 py-2.5 text-left transition-colors ${
                   isActive
-                    ? "bg-[var(--color-primary)]/15 text-[var(--color-primary)]"
+                    ? "bg-transparent/15 text-[var(--color-primary)]"
                     : "text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]"
                 }`}
               >
-                <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-xs font-bold ${
-                  isActive ? "bg-[var(--color-primary)]/20 text-[var(--color-primary)]" : "bg-[var(--color-border)]/50 text-[var(--color-text-muted)]"
+                <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-none text-xs font-bold ${
+                  isActive ? "bg-transparent/20 text-[var(--color-primary)]" : "bg-[var(--color-border)]/50 text-[var(--color-text-muted)]"
                 }`}>
                   {exp.number}
                 </div>
@@ -63,13 +63,13 @@ export function ExperimentsTab({ slug, experiments }: { slug: string; experiment
                       {modeLabel}
                     </span>
                     {exp.agent_key && (
-                      <span className="inline-flex rounded-full bg-[var(--color-primary)]/10 px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-primary)]">
+                      <span className="inline-flex rounded-full bg-transparent/10 px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-primary)]">
                         {exp.agent_key}
                       </span>
                     )}
                   </div>
                 </div>
-                {isActive && <div className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[var(--color-primary)]" />}
+                {isActive && <div className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-transparent" />}
               </button>
             );
           })}
@@ -89,19 +89,19 @@ export function ExperimentsTab({ slug, experiments }: { slug: string; experiment
               <span className="text-sm text-[var(--color-text-muted)]">{parsed.timestamp}</span>
             </div>
             {parsed.agentResponse && (
-              <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+              <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Agent Response</h3>
                 <div className="whitespace-pre-wrap text-sm text-[var(--color-text)]">{parsed.agentResponse}</div>
               </div>
             )}
             {parsed.toolCalls.length > 0 && (
-              <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+              <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
                   Tool Calls ({parsed.toolCalls.length})
                 </h3>
                 <div className="space-y-2">
                   {parsed.toolCalls.map((tc, i) => (
-                    <div key={i} className="rounded-md bg-[var(--color-bg)]/50 px-3 py-2 text-xs">
+                    <div key={i} className="rounded-none bg-[var(--color-bg)]/50 px-3 py-2 text-xs">
                       <span className="font-medium text-[var(--color-primary)]">{tc.name}</span>
                       <span className="ml-2 text-[var(--color-text-muted)]">({tc.status})</span>
                     </div>
@@ -110,7 +110,7 @@ export function ExperimentsTab({ slug, experiments }: { slug: string; experiment
               </div>
             )}
             {parsed.riskState && (
-              <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+              <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Risk State</h3>
                 <div className="whitespace-pre-wrap text-xs text-[var(--color-text-muted)]">{parsed.riskState}</div>
               </div>
