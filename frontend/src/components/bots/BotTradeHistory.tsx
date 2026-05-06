@@ -187,43 +187,49 @@ export function BotTradeHistory({
       ) : trades.length === 0 ? (
         <p className="text-sm text-[var(--color-text-muted)]">No trade history found.</p>
       ) : (
+      <div className="glass overflow-hidden rounded-xl border-white/5 shadow-xl">
         <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="text-[var(--color-text-muted)]">
-              <tr className="border-b border-[var(--color-border)]">
-                <th className="py-2 pr-4 font-medium">Time</th>
-                <th className="py-2 pr-4 font-medium">Market</th>
-                <th className="py-2 pr-4 font-medium">Symbol</th>
-                <th className="py-2 pr-4 font-medium">Side</th>
-                <th className="py-2 pr-4 font-medium">Price</th>
-                <th className="py-2 pr-4 font-medium">Qty</th>
-                <th className="py-2 pr-4 font-medium">Fee</th>
-                <th className="py-2 pr-4 font-medium">Trade ID</th>
+          <table className="min-w-full text-left text-sm border-separate border-spacing-y-1">
+            <thead>
+              <tr className="bg-white/5 text-[10px] uppercase font-bold text-[var(--color-text-muted)] tracking-widest">
+                <th className="px-4 py-3">Time</th>
+                <th className="px-4 py-3">Market</th>
+                <th className="px-4 py-3">Symbol</th>
+                <th className="px-4 py-3">Side</th>
+                <th className="px-4 py-3">Price</th>
+                <th className="px-4 py-3">Qty</th>
+                <th className="px-4 py-3">Fee</th>
+                <th className="px-4 py-3">Trade ID</th>
               </tr>
             </thead>
             <tbody>
               {sortedTrades.map((trade) => (
                 <tr
                   key={trade.trade_id || `${trade.trade_timestamp}-${trade.symbol}-${trade.trade_type}`}
-                  className="border-b border-[var(--color-border)]/60 last:border-0"
+                  className="bg-white/5 hover:bg-white/10 transition-all group"
                 >
-                  <td className="py-2 pr-4 font-mono text-xs">
+                  <td className="px-4 py-2 rounded-l-lg font-mono text-[10px] text-[var(--color-text-muted)] opacity-60 group-hover:opacity-100">
                     {formatTimestamp(trade.trade_timestamp)}
                   </td>
-                  <td className="py-2 pr-4">{trade.market}</td>
-                  <td className="py-2 pr-4">{trade.symbol}</td>
-                  <td className="py-2 pr-4">{trade.trade_type}</td>
-                  <td className="py-2 pr-4 font-mono">{trade.price}</td>
-                  <td className="py-2 pr-4 font-mono">{formatQuantity(trade.quantity)}</td>
-                  <td className="py-2 pr-4 font-mono">
+                  <td className="px-4 py-2 font-bold text-xs">{trade.market}</td>
+                  <td className="px-4 py-2 font-bold text-xs">{trade.symbol}</td>
+                  <td className={`px-4 py-2 font-bold text-[10px] uppercase ${trade.trade_type?.toLowerCase().includes('buy') ? 'text-green-400' : 'text-red-400'}`}>
+                    {trade.trade_type}
+                  </td>
+                  <td className="px-4 py-2 font-mono text-xs font-bold">{trade.price}</td>
+                  <td className="px-4 py-2 font-mono text-xs">{formatQuantity(trade.quantity)}</td>
+                  <td className="px-4 py-2 font-mono text-xs opacity-80">
                     {formatQuote(trade.trade_fee_in_quote)}
                   </td>
-                  <td className="py-2 pr-4 font-mono text-xs">{trade.trade_id}</td>
+                  <td className="px-4 py-2 rounded-r-lg font-mono text-[10px] text-[var(--color-text-muted)] opacity-30 group-hover:opacity-60 transition-opacity truncate max-w-[80px]">
+                    {trade.trade_id}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      </div>
       )}
 
       <div className="mt-4 flex items-center justify-between gap-4 border-t border-[var(--color-border)] pt-3">

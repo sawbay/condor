@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Circle, Loader2, Play, RefreshCw, Square } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { BotTradeHistory } from "@/components/bots/BotTradeHistory";
+import { LogTerminal } from "@/components/bots/LogTerminal";
 import { useServer } from "@/hooks/useServer";
 import { api } from "@/lib/api";
 
@@ -122,6 +123,10 @@ export function BotDetail() {
   const wsRef = useRef<WebSocket | null>(null);
   const [refreshAnchor, setRefreshAnchor] = useState<number | null>(null);
   const refreshIntervalMs = 10000;
+  
+  const reconnectTimeoutRef = useRef<number | null>(null);
+  const reconnectAttempts = useRef(0);
+  const maxReconnectDelay = 30000;
 
   // WebSocket for deployment and status monitoring
   useEffect(() => {
@@ -130,31 +135,43 @@ export function BotDetail() {
     // Use Basic Auth credentials in the URL as requested
     // Use Authorization Header approach as requested
     const wsUrl = `wss://humming-api2.sawbay.net/ws/executors`;
-    
-    let ws: WebSocket | null = null;
 
     const establishConnection = () => {
-      console.log(`[WS] Connecting to ${wsUrl} for bot: ${id}`);
+      if (reconnectTimeoutRef.current) {
+        window.clearTimeout(reconnectTimeoutRef.current);
+      }
+
+      console.log(`[WS] Connecting to ${wsUrl} (Attempt ${reconnectAttempts.current + 1})`);
       try {
-        ws = new WebSocket(wsUrl);
+        const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
         setupHandlers(ws);
       } catch (err) {
         console.error("[WS] Failed to create WebSocket:", err);
+        handleReconnect();
       }
+    };
+
+    const handleReconnect = () => {
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), maxReconnectDelay);
+      console.log(`[WS] Reconnecting in ${delay}ms...`);
+      reconnectTimeoutRef.current = window.setTimeout(() => {
+        reconnectAttempts.current++;
+        establishConnection();
+      }, delay);
     };
 
     const setupHandlers = (websocket: WebSocket) => {
       websocket.onopen = () => {
         console.log("[WS] Connected. Authenticating...");
-        // 1. Authenticate immediately after connection is accepted
+        reconnectAttempts.current = 0; // Reset attempts on success
+        
         websocket.send(JSON.stringify({
           action: "authenticate",
           username: "admin",
           password: "admin"
         }));
 
-        // 2. Subscribe to bot_deployment immediately after authentication
         console.log(`[WS] Subscribing to deployment for: ${id}`);
         websocket.send(JSON.stringify({
           action: "subscribe",
@@ -167,14 +184,29 @@ export function BotDetail() {
       websocket.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data);
-          console.log("[WS] Received:", msg);
+          
           if (msg.type === "bot_deployment_resolved") {
-            console.log("[WS] Deployment resolved. Switching to ongoing monitoring...");
             websocket.send(JSON.stringify({
               action: "subscribe",
               type: "bot_status",
               bot_name: id
             }));
+          }
+
+          if (msg.type === "bot_status_update" || msg.type === "bot_status") {
+            const status = msg.status || msg.data?.status;
+            const performance = msg.performance || msg.data?.performance;
+            
+            if (status || performance) {
+              queryClient.setQueryData(["bot", server, id], (old: any) => {
+                if (!old) return old;
+                return { 
+                  ...old, 
+                  bot: { ...old.bot, status: status ?? old.bot.status },
+                  performance: performance ?? old.performance
+                };
+              });
+            }
           }
         } catch (err) {
           console.error("[WS] Error parsing message:", err);
@@ -186,17 +218,22 @@ export function BotDetail() {
       };
 
       websocket.onclose = (event) => {
-        console.log(`[WS] WebSocket closed (code: ${event.code}, reason: ${event.reason})`);
+        console.log(`[WS] WebSocket closed (code: ${event.code})`);
+        if (event.code !== 1000 && event.code !== 1001) {
+          handleReconnect();
+        }
       };
     };
 
     establishConnection();
 
     return () => {
-      console.log("[WS] Cleaning up WebSocket");
+      if (reconnectTimeoutRef.current) {
+        window.clearTimeout(reconnectTimeoutRef.current);
+      }
       const currentWs = wsRef.current;
       if (currentWs && (currentWs.readyState === WebSocket.OPEN || currentWs.readyState === WebSocket.CONNECTING)) {
-        currentWs.close();
+        currentWs.close(1000, "Component unmounted");
       }
       wsRef.current = null;
     };
@@ -212,7 +249,6 @@ export function BotDetail() {
   const {
     data: containerStatus,
     isFetching: isFetchingContainer,
-    error: containerError,
   } = useQuery({
     queryKey: ["bot-container", server, containerName],
     queryFn: () => api.getBotContainer(server!, containerName!),
@@ -252,10 +288,6 @@ export function BotDetail() {
     void queryClient.invalidateQueries({ queryKey: ["bots", server] });
   };
 
-  const stopBotMutation = useMutation({
-    mutationFn: () => api.stopBot(server!, containerName!),
-    onSuccess: invalidateBotData,
-  });
 
   const startContainerMutation = useMutation({
     mutationFn: () => api.startBotContainer(server!, containerName!),
@@ -267,15 +299,59 @@ export function BotDetail() {
     onSuccess: invalidateBotData,
   });
 
-  const stopControllersMutation = useMutation({
-    mutationFn: () => api.stopBotControllers(server!, containerName!),
-    onSuccess: invalidateBotData,
+
+  const { bot, config, performance, general_logs, error_logs } = data ?? {
+    bot: { name: id, status: "unknown" },
+    config: {},
+    performance: {},
+    general_logs: [],
+    error_logs: [],
+  };
+  const perfRecord = performance as Record<string, any>;
+  const perfEntries = Object.entries(perfRecord);
+  
+  // Separate scalars from controllers
+  const scalarPerformanceEntries = perfEntries.filter(([, value]) => {
+    return value === null || typeof value !== "object" || Array.isArray(value);
+  });
+  const controllerPerformanceEntries = perfEntries.filter(([, value]) => {
+    return value !== null && typeof value === "object" && !Array.isArray(value);
   });
 
-  const startControllersMutation = useMutation({
-    mutationFn: () => api.startBotControllers(server!, containerName!),
-    onSuccess: invalidateBotData,
-  });
+  // Calculate totals from controllers if needed
+  const totals = useMemo(() => {
+    let globalPnl = 0;
+    let totalVolume = 0;
+    controllerPerformanceEntries.forEach(([, controllerData]) => {
+      const perf = (controllerData as any).performance || {};
+      globalPnl += Number(perf.global_pnl_quote || 0);
+      totalVolume += Number(perf.volume_traded || 0);
+    });
+    return { globalPnl, totalVolume };
+  }, [controllerPerformanceEntries]);
+
+  // Extract all active positions
+  const allPositions = useMemo(() => {
+    const positions: any[] = [];
+    controllerPerformanceEntries.forEach(([controllerName, controllerData]) => {
+      const perf = (controllerData as any).performance || {};
+      const positionsSummary = perf.positions_summary || [];
+      positionsSummary.forEach((pos: any) => {
+        positions.push({
+          ...pos,
+          controllerName,
+        });
+      });
+    });
+    return positions;
+  }, [controllerPerformanceEntries]);
+
+  // Merge totals into scalar display if scalar list is sparse
+  const displayPerformance = [...scalarPerformanceEntries];
+  if (controllerPerformanceEntries.length > 0) {
+    displayPerformance.unshift(["Total Volume", totals.totalVolume.toFixed(2)]);
+    displayPerformance.unshift(["Global PnL", totals.globalPnl.toFixed(2)]);
+  }
 
   if (!server || !id) return null;
   if (isLoading) return <p className="text-[var(--color-text-muted)]">Loading...</p>;
@@ -287,20 +363,10 @@ export function BotDetail() {
     );
   }
   if (!data) return null;
-
-  const { bot, config, performance, general_logs, error_logs } = data;
-  const perfRecord = performance as Record<string, unknown>;
-  const perfEntries = Object.entries(perfRecord);
-  const scalarPerformanceEntries = perfEntries.filter(([, value]) => {
-    return value === null || typeof value !== "object" || Array.isArray(value);
-  });
-  const controllerPerformanceEntries = perfEntries.filter(([, value]) => {
-    return value !== null && typeof value === "object" && !Array.isArray(value);
-  });
   const statusColor =
     bot.status === "running"
-      ? "text-[var(--color-green)]"
-      : "text-[var(--color-red)]";
+      ? "text-[var(--color-green)] glow-text-green"
+      : "text-[var(--color-red)] glow-text-red";
   const containerStatusColor = containerStatus?.is_running
     ? "text-[var(--color-green)]"
     : containerStatus?.exists
@@ -319,294 +385,223 @@ export function BotDetail() {
       : null;
 
   return (
-    <div>
-      <Link
-        to="/bots"
-        className="mb-4 inline-flex items-center gap-1 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to bots
-      </Link>
-
-      <div className="mb-6 flex items-center gap-3">
-        <h2 className="text-xl font-bold">{bot.name}</h2>
-        <span className={`flex items-center gap-1.5 text-sm ${statusColor}`}>
-          <Circle className="h-2 w-2 fill-current" />
-          {bot.status}
-        </span>
-      </div>
-
-      <div className="mb-6 flex flex-wrap items-center gap-2">
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] px-3 py-2 text-sm ${containerStatusColor}`}
-          title={containerError instanceof Error ? containerError.message : "Docker container status"}
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <Link
+          to="/bots"
+          className="inline-flex items-center gap-1 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
         >
-          {isFetchingContainer ? <Loader2 className="h-4 w-4 animate-spin" /> : <Circle className="h-2 w-2 fill-current" />}
-          Container: {containerStatus?.status ?? "unknown"}
-        </span>
-        <button
-          type="button"
-          onClick={() => startContainerMutation.mutate()}
-          disabled={isContainerRunning || isContainerActionPending || !containerStatus?.exists}
-          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-green)]/35 bg-[var(--color-green)]/10 px-3 py-2 text-sm font-medium text-[var(--color-green)] transition-colors hover:bg-[var(--color-green)]/15 disabled:cursor-not-allowed disabled:opacity-40"
-          title="Start the Docker container for this bot"
-        >
-          {startContainerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-          Start container
-        </button>
-        <button
-          type="button"
-          onClick={() => stopContainerMutation.mutate()}
-          disabled={!isContainerRunning || isContainerActionPending}
-          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-red)]/35 bg-[var(--color-red)]/10 px-3 py-2 text-sm font-medium text-[var(--color-red)] transition-colors hover:bg-[var(--color-red)]/15 disabled:cursor-not-allowed disabled:opacity-40"
-          title="Stop the Docker container without archiving the bot"
-        >
-          {stopContainerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
-          Stop container
-        </button>
-        <button
-          type="button"
-          onClick={() => stopBotMutation.mutate()}
-          disabled={bot.status !== "running" || stopBotMutation.isPending}
-          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-red)]/35 bg-[var(--color-red)]/10 px-3 py-2 text-sm font-medium text-[var(--color-red)] transition-colors hover:bg-[var(--color-red)]/15 disabled:cursor-not-allowed disabled:opacity-40"
-          title="Stop, archive, and delete the entire bot"
-        >
-          {stopBotMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
-          Stop & archive bot
-        </button>
-        {bot.status === "running" && (
-          <>
-            <button
-              type="button"
-              onClick={() => stopControllersMutation.mutate()}
-              disabled={stopControllersMutation.isPending}
-              className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-red)]/35 bg-[var(--color-red)]/10 px-3 py-2 text-sm font-medium text-[var(--color-red)] transition-colors hover:bg-[var(--color-red)]/15 disabled:cursor-not-allowed disabled:opacity-40"
-              title="Stop controllers inside this running bot"
-            >
-              {stopControllersMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Square className="h-4 w-4" />
-              )}
-              Stop controllers
-            </button>
-            <button
-              type="button"
-              onClick={() => startControllersMutation.mutate()}
-              disabled={startControllersMutation.isPending}
-              className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-green)]/35 bg-[var(--color-green)]/10 px-3 py-2 text-sm font-medium text-[var(--color-green)] transition-colors hover:bg-[var(--color-green)]/15 disabled:cursor-not-allowed disabled:opacity-40"
-              title="Resume controllers inside this running bot"
-            >
-              {startControllersMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Play className="h-4 w-4" />
-              )}
-              Start controllers
-            </button>
-          </>
-        )}
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-          <h3 className="mb-3 font-medium text-[var(--color-text-muted)]">
-            Configuration
-          </h3>
-          {Object.keys(config).length === 0 ? (
-            <p className="text-sm text-[var(--color-text-muted)]">No config available</p>
-          ) : (
-            <dl className="space-y-2 text-sm">
-              {Object.entries(config).map(([k, v]) => (
-                <div key={k} className="flex justify-between gap-4">
-                  <dt className="text-[var(--color-text-muted)]">{k}</dt>
-                  <dd className="font-mono text-right">{String(v)}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-        </div>
-
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-          <h3 className="mb-3 font-medium text-[var(--color-text-muted)]">
-            Performance
-          </h3>
-          {perfEntries.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-muted)]">No performance data</p>
-          ) : (
-            <>
-              {scalarPerformanceEntries.length > 0 && (
-                <dl className="space-y-2 text-sm">
-                  {scalarPerformanceEntries.map(([k, v]) => (
-                    <div key={k} className="flex justify-between gap-4">
-                      <dt className="text-[var(--color-text-muted)]">{k}</dt>
-                      <dd className="font-mono text-right">{String(v)}</dd>
-                    </div>
-                  ))}
-                </dl>
-              )}
-
-              {controllerPerformanceEntries.length > 0 && (
-                <div
-                  className={
-                    scalarPerformanceEntries.length > 0
-                      ? "mt-4 border-t border-[var(--color-border)] pt-4"
-                      : ""
-                  }
-                >
-                  <h4 className="mb-2 text-sm font-medium text-[var(--color-text-muted)]">
-                    Controllers
-                  </h4>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full text-left text-sm">
-                      <thead className="text-[var(--color-text-muted)]">
-                        <tr className="border-b border-[var(--color-border)]">
-                          <th className="py-2 pr-4 font-medium">Controller</th>
-                          <th className="py-2 pr-4 font-medium">Status</th>
-                          <th className="py-2 pr-4 font-medium">PnL</th>
-                          <th className="py-2 pr-4 font-medium">Volume</th>
-                          <th className="py-2 pr-4 font-medium">Details</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {controllerPerformanceEntries.map(([controllerName, controllerData]) => {
-                          const ctrl = controllerData as Record<string, unknown>;
-                          const nestedPerf = (ctrl.performance ?? {}) as Record<string, unknown>;
-                          const realized = Number(nestedPerf.realized_pnl_quote ?? 0);
-                          const unrealized = Number(nestedPerf.unrealized_pnl_quote ?? 0);
-                          const globalPnl = Number(
-                            nestedPerf.global_pnl_quote ?? realized + unrealized,
-                          );
-                          const volume = Number(nestedPerf.volume_traded ?? 0);
-                          const status = String(ctrl.status ?? "unknown");
-                          const details = [
-                            ctrl.connector_name ?? ctrl.connector,
-                            ctrl.trading_pair,
-                            nestedPerf.global_pnl_pct !== undefined
-                              ? `PnL % ${String(nestedPerf.global_pnl_pct)}`
-                              : null,
-                          ]
-                            .filter(Boolean)
-                            .map(String)
-                            .join(" | ");
-
-                          return (
-                            <tr
-                              key={controllerName}
-                              className="border-b border-[var(--color-border)]/60 last:border-0"
-                            >
-                              <td className="py-2 pr-4 font-medium">{controllerName}</td>
-                              <td className="py-2 pr-4">{status}</td>
-                              <td className="py-2 pr-4 font-mono">{globalPnl.toFixed(2)}</td>
-                              <td className="py-2 pr-4 font-mono">{volume.toFixed(2)}</td>
-                              <td className="py-2 pr-4 text-xs text-[var(--color-text-muted)]">
-                                {details || "—"}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
+          <ArrowLeft className="h-4 w-4" />
+          Back to bots
+        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setAutoRefresh((value) => !value)}
+            className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs transition-all ${
+              autoRefresh
+                ? "border-[var(--color-green)]/40 bg-[var(--color-green)]/10 text-[var(--color-green)] glow-text-green"
+                : "border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface)]"
+            }`}
+          >
+            Auto {autoRefresh ? `(${countdownSeconds ?? 0}s)` : "off"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-xs text-[var(--color-text)] hover:bg-[var(--color-surface)] transition-all active:scale-95"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
         </div>
       </div>
 
-      <div className="mt-6">
-        <BotTradeHistory server={server} botId={id} />
-      </div>
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
+        {/* Left Column: Metrics & Controls */}
+        <div className="w-full lg:w-1/3 space-y-6 shrink-0">
+          <div className="glass rounded-xl p-6 space-y-4 shadow-xl border-white/5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold tracking-tight">{bot.name}</h2>
+              <span className={`flex items-center gap-1.5 text-sm font-semibold ${statusColor}`}>
+                <Circle className="h-2 w-2 fill-current animate-pulse" />
+                {bot.status}
+              </span>
+            </div>
 
-      <div className="mt-6 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <div>
-            <h3 className="font-medium text-[var(--color-text-muted)]">Logs</h3>
-            <p className="text-xs text-[var(--color-text-muted)]">
-              {parsedLogs.length} log entries
-            </p>
-          </div>
-          <div className="flex flex-col items-end gap-1">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap gap-2">
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${containerStatusColor} border-white/5 bg-white/5`}
+              >
+                {isFetchingContainer ? <Loader2 className="h-3 w-3 animate-spin" /> : <Circle className="h-1.5 w-1.5 fill-current" />}
+                {containerStatus?.status ?? "unknown"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => void refetch()}
-                className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-xs text-[var(--color-text)] hover:bg-[var(--color-surface)]"
+                onClick={() => startContainerMutation.mutate()}
+                disabled={isContainerRunning || isContainerActionPending || !containerStatus?.exists}
+                className="flex items-center justify-center gap-2 rounded-lg bg-green-500/10 border border-green-500/20 py-2.5 text-xs font-bold text-green-500 hover:bg-green-500/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
               >
-                <RefreshCw className="h-3.5 w-3.5" />
-                Refresh logs
+                <Play className="h-3 w-3 fill-current" /> START
               </button>
               <button
                 type="button"
-                onClick={() => setAutoRefresh((value) => !value)}
-                className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs ${autoRefresh
-                    ? "border-[var(--color-green)]/40 bg-[var(--color-green)]/10 text-[var(--color-green)]"
-                    : "border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface)]"
-                  }`}
+                onClick={() => stopContainerMutation.mutate()}
+                disabled={!isContainerRunning || isContainerActionPending}
+                className="flex items-center justify-center gap-2 rounded-lg bg-red-500/10 border border-red-500/20 py-2.5 text-xs font-bold text-red-500 hover:bg-red-500/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
               >
-                Auto
-                <span className="text-[10px] opacity-75">
-                  {autoRefresh ? `${countdownSeconds ?? 0}s` : "off"}
-                </span>
+                <Square className="h-3 w-3 fill-current" /> STOP
               </button>
             </div>
-            <p className="text-xs text-[var(--color-text-muted)]">
-              {dataUpdatedAt ? `updated ${new Date(dataUpdatedAt).toLocaleTimeString()}` : ""}
-              {dataUpdatedAt && isFetching ? " · " : ""}
-              {isFetching ? "refreshing" : ""}
-            </p>
+          </div>
+
+          <div className="glass rounded-xl p-6 space-y-4 border-white/5">
+            <h3 className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
+              Performance Summary
+            </h3>
+            <div className="space-y-4">
+              {displayPerformance.length > 0 ? (
+                displayPerformance.map(([k, v]) => (
+                  <div key={k} className="flex justify-between items-baseline border-b border-white/5 pb-2 last:border-0">
+                    <span className="text-xs text-[var(--color-text-muted)]">{k}</span>
+                    <span className={`font-mono text-sm font-bold ${k.toLowerCase().includes('pnl') ? (Number(v) >= 0 ? 'text-green-400' : 'text-red-400') : ''}`}>
+                      {String(v)}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-[var(--color-text-muted)] italic text-center py-2">
+                  No performance metrics available
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="glass rounded-xl p-6 space-y-4 border-white/5 overflow-hidden">
+            <h3 className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
+              Configuration
+            </h3>
+            <div className="max-h-48 overflow-y-auto pr-2 scrollbar-thin">
+              <dl className="space-y-3">
+                {Object.entries(config).map(([k, v]) => (
+                  <div key={k} className="space-y-1">
+                    <dt className="text-[10px] text-[var(--color-text-muted)] uppercase font-bold">{k}</dt>
+                    <dd className="font-mono text-xs break-all bg-black/20 p-2 rounded border border-white/5">
+                      {String(v)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
           </div>
         </div>
 
-        {parsedLogs.length === 0 ? (
-          <p className="text-sm text-[var(--color-text-muted)]">No logs available.</p>
-        ) : (
-          <div ref={logsScrollRef} className="max-h-[32rem] space-y-4 overflow-y-auto pr-1">
-            <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] p-3">
-              <div className="space-y-2 text-xs text-[var(--color-text)]">
-                {parsedLogs.map((log, idx) => (
-                  <details
-                    key={`${log.sortKey}-${idx}`}
-                    className={`group rounded border px-3 py-2 ${log.isError
-                        ? "border-[var(--color-red)]/30 bg-[var(--color-red)]/5"
-                        : "border-[var(--color-border)]/40 bg-[var(--color-surface)]"
-                      }`}
-                  >
-                    <summary className="cursor-pointer list-none">
-                      <div className="flex items-start gap-3">
-                        <span
-                          className={`min-w-44 font-mono ${log.isError
-                              ? "text-[var(--color-red)]"
-                              : "text-[var(--color-text-muted)]"
-                            }`}
-                        >
-                          {log.timestamp || "unknown"}
-                        </span>
-                        <span
-                          className={`min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-mono ${log.isError ? "text-[var(--color-red)]" : ""
-                            }`}
-                        >
-                          {log.summary}
-                        </span>
-                      </div>
-                    </summary>
-                    <div
-                      className={`mt-2 border-t pt-2 font-mono whitespace-pre-wrap break-words ${log.isError
-                          ? "border-[var(--color-red)]/20 text-[var(--color-red)]"
-                          : "border-[var(--color-border)]/40 text-[var(--color-text)]"
-                        }`}
-                    >
-                      {log.fullText}
-                    </div>
-                  </details>
-                ))}
+        {/* Right Column: Live Terminal & Detailed Data */}
+        <div className="flex-1 w-full space-y-6">
+          <div className="h-[450px]">
+            <LogTerminal logs={parsedLogs} />
+          </div>
+
+          {controllerPerformanceEntries.length > 0 && (
+            <div className="glass rounded-xl p-6 border-white/5 overflow-hidden">
+              <h3 className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-4">
+                Active Controllers
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm border-separate border-spacing-y-2">
+                  <thead>
+                    <tr className="text-[10px] text-[var(--color-text-muted)] uppercase font-bold">
+                      <th className="pb-2 px-2">Controller</th>
+                      <th className="pb-2 px-2">Status</th>
+                      <th className="pb-2 px-2 text-right">PnL</th>
+                      <th className="pb-2 px-2 text-right">Volume</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {controllerPerformanceEntries.map(([controllerName, controllerData]) => {
+                      const ctrl = controllerData as Record<string, unknown>;
+                      const nestedPerf = (ctrl.performance ?? {}) as Record<string, unknown>;
+                      const pnl = Number(nestedPerf.global_pnl_quote ?? 0);
+                      return (
+                        <tr key={controllerName} className="bg-white/5 hover:bg-white/10 transition-colors group">
+                          <td className="py-3 px-3 rounded-l-lg font-bold">{controllerName}</td>
+                          <td className="py-3 px-3">
+                            <span className="text-xs opacity-70 group-hover:opacity-100 transition-opacity">
+                              {String(ctrl.status ?? "unknown")}
+                            </span>
+                          </td>
+                          <td className={`py-3 px-3 text-right font-mono font-bold ${pnl >= 0 ? "text-green-400 glow-text-green" : "text-red-400 glow-text-red"}`}>
+                            {pnl >= 0 ? "+" : ""}{pnl.toFixed(2)}
+                          </td>
+                          <td className="py-3 px-3 rounded-r-lg text-right font-mono opacity-80 group-hover:opacity-100 transition-opacity">
+                            {Number(nestedPerf.volume_traded ?? 0).toFixed(2)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
 
+          {allPositions.length > 0 && (
+            <div className="glass rounded-xl p-6 border-white/5 overflow-hidden">
+              <h3 className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-4">
+                Open Positions
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm border-separate border-spacing-y-2">
+                  <thead>
+                    <tr className="text-[10px] text-[var(--color-text-muted)] uppercase font-bold">
+                      <th className="pb-2 px-2">Side</th>
+                      <th className="pb-2 px-2">Symbol</th>
+                      <th className="pb-2 px-2 text-right">Amount</th>
+                      <th className="pb-2 px-2 text-right">Entry</th>
+                      <th className="pb-2 px-2 text-right">PnL</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allPositions.map((pos, idx) => {
+                      const pnl = Number(pos.unrealized_pnl_quote ?? 0);
+                      const side = pos.side?.split('.').pop() ?? 'UNKNOWN';
+                      return (
+                        <tr key={`${pos.trading_pair}-${idx}`} className="bg-white/5 hover:bg-white/10 transition-colors group">
+                          <td className={`py-3 px-3 rounded-l-lg font-bold text-[10px] ${side === 'BUY' ? 'text-green-400' : 'text-red-400'}`}>
+                            {side}
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="flex flex-col">
+                              <span className="font-bold">{pos.trading_pair}</span>
+                              <span className="text-[10px] text-[var(--color-text-muted)] opacity-50">{pos.controllerName}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-right font-mono font-bold">
+                            {Number(pos.amount).toFixed(6)}
+                          </td>
+                          <td className="py-3 px-3 text-right font-mono opacity-80 group-hover:opacity-100 transition-opacity">
+                            {Number(pos.breakeven_price).toFixed(2)}
+                          </td>
+                          <td className={`py-3 px-3 rounded-r-lg text-right font-mono font-bold ${pnl >= 0 ? "text-green-400 glow-text-green" : "text-red-400 glow-text-red"}`}>
+                            {pnl >= 0 ? "+" : ""}{pnl.toFixed(2)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <div className="glass rounded-xl p-6 border-white/5">
+            <BotTradeHistory server={server} botId={id} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

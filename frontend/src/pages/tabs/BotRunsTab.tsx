@@ -199,56 +199,48 @@ function BotRunsList({
         </span>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-[var(--color-border)]">
+      <div className="glass overflow-hidden rounded-xl border-white/5 shadow-xl">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm border-separate border-spacing-y-1">
             <thead>
-              <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
-                  Bot
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
-                  Status
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
-                  Strategy
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
-                  Account
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
-                  Last Update
-                </th>
+              <tr className="bg-white/5 text-[10px] uppercase font-bold text-[var(--color-text-muted)] tracking-widest">
+                <th className="px-4 py-3 text-left">Bot</th>
+                <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-left">Strategy</th>
+                <th className="px-4 py-3 text-left">Account</th>
+                <th className="px-4 py-3 text-right">Last Update</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="px-1">
               {sortedRuns.map((run, idx) => (
                 <tr
                   key={`${run.bot_name}-${run.run_status}-${run.deployment_status}-${idx}`}
-                  className="border-b border-[var(--color-border)]/30 last:border-0 hover:bg-[var(--color-surface-hover)]/50"
+                  className="bg-white/5 hover:bg-white/10 transition-all group"
                 >
-                  <td className="px-4 py-2.5">
+                  <td className="px-4 py-3 rounded-l-lg">
                     <BotNameCell
                       run={run}
                       archivedBot={findArchivedBot(run, archivedBots)}
                       onOpenArchived={onOpenArchived}
                     />
                   </td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-4 py-3">
                     <BotRunStatus run={run} />
                   </td>
-                  <td className="px-4 py-2.5 text-[var(--color-text-muted)]">
+                  <td className="px-4 py-3 text-[var(--color-text-muted)]">
                     <div className="flex flex-col">
-                      <span>{run.strategy_name || "-"}</span>
+                      <span className="font-bold text-[var(--color-text)] opacity-80 group-hover:opacity-100 transition-opacity">
+                        {run.strategy_name || "-"}
+                      </span>
                       {run.strategy_type && (
-                        <span className="text-xs capitalize">{formatStatus(run.strategy_type)}</span>
+                        <span className="text-[10px] uppercase font-bold opacity-40">{formatStatus(run.strategy_type)}</span>
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-2.5 text-[var(--color-text-muted)]">
+                  <td className="px-4 py-3 text-[var(--color-text-muted)] text-xs font-medium">
                     {run.account_name || "-"}
                   </td>
-                  <td className="px-4 py-2.5 text-right font-mono text-xs text-[var(--color-text-muted)]">
+                  <td className="px-4 py-3 text-right font-mono text-[10px] text-[var(--color-text-muted)] rounded-r-lg opacity-60 group-hover:opacity-100 transition-opacity">
                     {formatDate(runTimestamp(run))}
                   </td>
                 </tr>

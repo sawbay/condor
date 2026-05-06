@@ -133,15 +133,17 @@ function StatCard({
   valueColor?: string;
 }) {
   return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
-      <div className="flex items-center gap-2 mb-1">
-        <Icon className="h-3.5 w-3.5 text-[var(--color-text-muted)]" />
-        <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider">
+    <div className="glass rounded-xl px-4 py-4 shadow-lg border-white/5 transition-all hover:scale-[1.02] hover:bg-white/5 group">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="p-1.5 rounded-md bg-white/5 group-hover:bg-white/10 transition-colors">
+          <Icon className="h-4 w-4 text-[var(--color-text-muted)]" />
+        </div>
+        <span className="text-[10px] text-[var(--color-text-muted)] font-bold uppercase tracking-widest">
           {label}
         </span>
       </div>
       <p
-        className="text-xl font-bold tabular-nums"
+        className={`text-2xl font-black tabular-nums tracking-tight ${valueColor ? (valueColor.includes('green') ? 'glow-text-green' : 'glow-text-red') : ''}`}
         style={valueColor ? { color: valueColor } : {}}
       >
         {value}
@@ -691,55 +693,53 @@ export function ActiveBotsTab() {
                       const isSelected =
                         selectedController?.controller_name === ctrl.controller_name &&
                         selectedController?.bot_name === ctrl.bot_name;
+                      const pnl = ctrl.global_pnl_quote;
                       return (
                         <tr
                           key={`${ctrl.bot_name}-${ctrl.controller_name}`}
-                          className={`border-b border-[var(--color-border)]/30 hover:bg-[var(--color-surface-hover)]/50 cursor-pointer transition-colors ${isSelected ? "bg-[var(--color-surface-hover)]/70" : ""}`}
+                          className={`border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors group ${isSelected ? "bg-white/10" : ""}`}
                           onClick={() => setSelectedController(ctrl)}
                         >
-                          <td className="px-4 py-2.5">
+                          <td className="px-4 py-3">
                             <div className="flex flex-col">
-                              <span className="text-sm font-medium" title={ctrl.controller_name}>
+                              <span className="text-sm font-bold group-hover:text-white transition-colors" title={ctrl.controller_name}>
                                 {ctrl.controller_name}
                               </span>
                               {ctrl.controller_id && ctrl.controller_id !== ctrl.controller_name && (
-                                <span className="text-xs text-[var(--color-text-muted)] font-mono truncate" title={ctrl.controller_id}>
+                                <span className="text-[10px] text-[var(--color-text-muted)] font-mono truncate" title={ctrl.controller_id}>
                                   {ctrl.controller_id}
                                 </span>
                               )}
                             </div>
                           </td>
-                          <td className="px-4 py-2.5 text-sm text-[var(--color-text-muted)]">
+                          <td className="px-4 py-3 text-xs font-medium text-[var(--color-text-muted)]">
                             {ctrl.connector || "—"}
                           </td>
-                          <td className="px-4 py-2.5 text-sm">{ctrl.trading_pair || "—"}</td>
+                          <td className="px-4 py-3 text-xs font-bold">{ctrl.trading_pair || "—"}</td>
                           <td
-                            className="px-4 py-2.5 text-sm text-right tabular-nums font-medium"
-                            style={{ color: pnlColor(ctrl.realized_pnl_quote) }}
+                            className={`px-4 py-3 text-xs text-right tabular-nums font-bold ${ctrl.realized_pnl_quote >= 0 ? "text-green-400" : "text-red-400"}`}
                           >
                             {formatPnl(ctrl.realized_pnl_quote)}
                           </td>
                           <td
-                            className="px-4 py-2.5 text-sm text-right tabular-nums font-medium"
-                            style={{ color: pnlColor(ctrl.unrealized_pnl_quote) }}
+                            className={`px-4 py-3 text-xs text-right tabular-nums font-bold ${ctrl.unrealized_pnl_quote >= 0 ? "text-green-400" : "text-red-400"}`}
                           >
                             {formatPnl(ctrl.unrealized_pnl_quote)}
                           </td>
                           <td
-                            className="px-4 py-2.5 text-sm text-right tabular-nums font-medium"
-                            style={{ color: pnlColor(ctrl.global_pnl_quote) }}
+                            className={`px-4 py-3 text-sm text-right tabular-nums font-black ${pnl >= 0 ? "text-green-400 glow-text-green" : "text-red-400 glow-text-red"}`}
                           >
-                            {formatPnl(ctrl.global_pnl_quote)}
+                            {formatPnl(pnl)}
                           </td>
-                          <td className="px-4 py-2.5 text-sm text-right tabular-nums text-[var(--color-text-muted)]">
+                          <td className="px-4 py-3 text-xs text-right tabular-nums text-[var(--color-text-muted)] font-mono">
                             {formatVolume(ctrl.volume_traded)}
                           </td>
-                          <td className="px-4 py-2.5 text-sm text-right tabular-nums text-[var(--color-text-muted)]">
+                          <td className="px-4 py-3 text-xs text-right tabular-nums text-[var(--color-text-muted)]">
                             {formatUptime(ctrl.deployed_at)}
                           </td>
-                          <td className="px-4 py-2.5">
-                            <div className="flex items-center gap-1.5 justify-center">
-                              <StatusDot status={ctrl.status} />
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex items-center justify-center">
+                              <Circle className={`h-2 w-2 fill-current ${ctrl.status === 'running' ? 'text-green-400 animate-pulse' : 'text-red-400'}`} />
                             </div>
                           </td>
                         </tr>
