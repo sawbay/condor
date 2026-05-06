@@ -16,7 +16,7 @@ const STATUS_STYLES: Record<string, { dot: string; bg: string; label: string }> 
   running: { dot: "bg-emerald-400 shadow-[0_0_6px_theme(colors.emerald.400)]", bg: "border-emerald-500/30 bg-emerald-500/5", label: "LIVE" },
   paused: { dot: "bg-amber-400", bg: "border-amber-500/30 bg-amber-500/5", label: "PAUSED" },
   stopped: { dot: "bg-red-400/60", bg: "border-red-500/20 bg-red-500/5", label: "STOPPED" },
-  idle: { dot: "bg-[var(--color-text-muted)]/40", bg: "border-[var(--color-border)] bg-[var(--color-surface)]", label: "IDLE" },
+  idle: { dot: "bg-[var(--color-text-muted)]/40", bg: "border-[var(--color-border)] bg-transparent", label: "IDLE" },
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -39,16 +39,16 @@ function AgentCard({ agent, onClick }: { agent: AgentSummary; onClick: () => voi
   return (
     <button
       onClick={onClick}
-      className={`group relative w-full rounded-lg border text-left transition-all duration-200 hover:border-[var(--color-primary)]/40 hover:shadow-lg ${
+      className={`group relative w-full rounded-none border text-left transition-all duration-200 hover:border-[var(--color-primary)]/40 hover:shadow-none ${
         isLive
           ? "border-emerald-500/20 bg-emerald-500/[0.03]"
-          : "border-[var(--color-border)] bg-[var(--color-surface)]"
+          : "border-[var(--color-border)] bg-transparent"
       }`}
     >
       <div className="p-4">
         <div className="mb-3 flex items-start justify-between">
           <div className="flex items-center gap-2">
-            <div className={`flex h-8 w-8 items-center justify-center rounded-md ${
+            <div className={`flex h-8 w-8 items-center justify-center rounded-none ${
               isLive ? "bg-emerald-500/10 text-emerald-400" : "bg-[var(--color-surface-hover)] text-[var(--color-text-muted)]"
             }`}>
               <Brain className="h-4 w-4" />
@@ -129,7 +129,7 @@ function CreateAgentDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="w-full max-w-md rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-6 shadow-2xl"
+        className="w-full max-w-md rounded-none border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] p-6 shadow-none"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="mb-4 text-lg font-semibold text-[var(--color-text)]">New Trading Agent</h2>
@@ -144,7 +144,7 @@ function CreateAgentDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. BTC Grid Scalper"
-              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]/50 outline-none transition-colors focus:border-[var(--color-primary)]"
+              className="w-full rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]/50 outline-none transition-colors focus:border-[var(--color-primary)]"
               autoFocus
             />
           </div>
@@ -157,7 +157,7 @@ function CreateAgentDialog({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What does this agent do?"
               rows={2}
-              className="w-full resize-none rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]/50 outline-none transition-colors focus:border-[var(--color-primary)]"
+              className="w-full resize-none rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]/50 outline-none transition-colors focus:border-[var(--color-primary)]"
             />
           </div>
           <div>
@@ -169,7 +169,7 @@ function CreateAgentDialog({
               onChange={(e) => setDefaultContext(e.target.value)}
               placeholder="e.g. Trade meme coins aggressively, focus on momentum breakouts with tight stops..."
               rows={3}
-              className="w-full resize-none rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]/50 outline-none transition-colors focus:border-[var(--color-primary)]"
+              className="w-full resize-none rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]/50 outline-none transition-colors focus:border-[var(--color-primary)]"
             />
             <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">
               Natural language context that guides trading decisions. Can be overridden per session.
@@ -180,14 +180,14 @@ function CreateAgentDialog({
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
+            className="rounded-none px-4 py-2 text-sm text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
           >
             Cancel
           </button>
           <button
             onClick={() => createMutation.mutate()}
             disabled={!name.trim() || createMutation.isPending}
-            className="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white transition-opacity disabled:opacity-40"
+            className="ghost-button disabled:opacity-40"
           >
             {createMutation.isPending ? "Creating..." : "Create Agent"}
           </button>
@@ -233,7 +233,7 @@ export function Agents() {
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white transition-all hover:shadow-lg hover:shadow-[var(--color-primary)]/20"
+          className="flex items-center gap-2 ghost-button shadow-none hover:shadow-[var(--color-primary)]/20"
         >
           <Plus className="h-4 w-4" />
           New Agent
@@ -243,23 +243,23 @@ export function Agents() {
       {/* Aggregate strip */}
       {!isLoading && agents.length > 0 && (
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+          <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-3">
             <span className="block text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">Total PnL</span>
             <span className={`text-lg font-mono font-semibold ${aggTotalColor}`}>
               ${aggTotalPnl >= 0 ? "+" : ""}{aggTotalPnl.toFixed(2)}
             </span>
           </div>
-          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+          <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-3">
             <span className="block text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">Volume</span>
             <span className="text-lg font-mono text-[var(--color-text)]">
               ${aggVolume.toLocaleString(undefined, { maximumFractionDigits: 0 })}
             </span>
           </div>
-          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+          <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-3">
             <span className="block text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">Open Positions</span>
             <span className="text-lg font-mono text-[var(--color-text)]">{aggOpen}</span>
           </div>
-          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+          <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-3">
             <span className="block text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">Live Agents</span>
             <span className="text-lg font-mono text-emerald-400">{running.length} / {agents.length}</span>
           </div>
@@ -271,7 +271,7 @@ export function Agents() {
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-primary)]" />
         </div>
       ) : agents.length === 0 ? (
-        <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface)]/50">
+        <div className="flex h-64 flex-col items-center justify-center rounded-none border border-dashed border-[var(--color-border)] bg-transparent/50">
           <Brain className="mb-3 h-10 w-10 text-[var(--color-text-muted)]/30" />
           <p className="mb-1 text-sm font-medium text-[var(--color-text)]">No agents yet</p>
           <p className="mb-4 text-xs text-[var(--color-text-muted)]">
@@ -279,7 +279,7 @@ export function Agents() {
           </p>
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white"
+            className="flex items-center gap-2 ghost-button"
           >
             <Plus className="h-4 w-4" />
             Create Agent

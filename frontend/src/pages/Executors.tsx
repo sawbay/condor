@@ -127,7 +127,7 @@ function MultiSelect({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-left text-sm transition-colors hover:border-[var(--color-primary)]/50 focus:border-[var(--color-primary)] focus:outline-none"
+        className="flex items-center gap-2 rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-1.5 text-left text-sm transition-colors hover:border-[var(--color-primary)]/50 focus:border-[var(--color-primary)] focus:outline-none"
       >
         <span className="truncate max-w-[180px] text-[var(--color-text)]">
           {selected.length === 0
@@ -138,7 +138,7 @@ function MultiSelect({
         </span>
         {selected.length > 0 && (
           <span
-            className="flex h-4 w-4 items-center justify-center rounded-full bg-[var(--color-primary)]/15 text-[10px] font-bold text-[var(--color-primary)]"
+            className="flex h-4 w-4 items-center justify-center rounded-full bg-transparent/15 text-[10px] font-bold text-[var(--color-primary)]"
           >
             {selected.length}
           </span>
@@ -147,7 +147,7 @@ function MultiSelect({
       </button>
 
       {open && (
-        <div className="absolute left-0 z-50 mt-1 max-h-64 w-max min-w-full overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
+        <div className="absolute left-0 z-50 mt-1 max-h-64 w-max min-w-full overflow-y-auto rounded-none border border-[var(--color-border)] ghost-panel bg-transparent shadow-none">
           {selected.length > 0 && (
             <button
               type="button"
@@ -167,13 +167,13 @@ function MultiSelect({
                 onClick={() => toggle(opt)}
                 className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors ${
                   isActive
-                    ? "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
+                    ? "bg-transparent/10 text-[var(--color-primary)]"
                     : "text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]"
                 }`}
               >
                 <div className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-colors ${
                   isActive
-                    ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
+                    ? "border-[var(--color-primary)] bg-transparent text-white"
                     : "border-[var(--color-border)]"
                 }`}>
                   {isActive && <Check className="h-3 w-3" />}
@@ -246,7 +246,7 @@ function StatCard({
   valueColor?: string;
 }) {
   return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+    <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-4 py-3">
       <div className="flex items-center gap-2 mb-1">
         <Icon className="h-3.5 w-3.5 text-[var(--color-text-muted)]" />
         <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider">
@@ -388,11 +388,11 @@ export function ExecutorTable({
   );
 
   return (
-    <div className="overflow-hidden rounded-lg border border-[var(--color-border)]">
+    <div className="overflow-hidden rounded-none border border-[var(--color-border)] ghost-panel">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+            <tr className="border-b border-[var(--color-border)] bg-transparent">
               <th className="px-3 py-3 w-8">
                 <input
                   type="checkbox"
@@ -441,7 +441,7 @@ export function ExecutorTable({
                     {ex.id.slice(0, 8)}
                   </td>
                   <td className="px-4 py-2.5">
-                    <span className="rounded bg-[var(--color-surface)] px-2 py-0.5 text-xs font-medium border border-[var(--color-border)]/50">
+                    <span className="rounded bg-transparent px-2 py-0.5 text-xs font-medium border border-[var(--color-border)] ghost-panel/50">
                       {ex.type}
                     </span>
                   </td>
@@ -575,11 +575,11 @@ export function DetailPanel({
 
   return (
       <div
-        className="h-full bg-[var(--color-bg)] border-l border-[var(--color-border)] overflow-y-auto shadow-xl shrink-0 relative"
+        className="h-full bg-[var(--color-bg)] border-l border-[var(--color-border)] overflow-y-auto shadow-none shrink-0 relative"
         style={{ width: panelWidth }}
       >
         <div
-          className="absolute top-0 left-0 w-1.5 h-full cursor-col-resize hover:bg-[var(--color-primary)]/30 transition-colors z-10"
+          className="absolute top-0 left-0 w-1.5 h-full cursor-col-resize hover:bg-transparent/30 transition-colors z-10"
           onMouseDown={onMouseDown}
         />
 
@@ -592,7 +592,7 @@ export function DetailPanel({
               <button
                 onClick={() => onStop(executor.id)}
                 disabled={stopping}
-                className="flex items-center gap-1.5 rounded-md bg-[var(--color-red)] px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-none bg-[var(--color-red)] px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 transition-colors disabled:opacity-50"
               >
                 <Square className="h-3 w-3" />
                 {stopping ? "Stopping\u2026" : "Stop"}
@@ -614,7 +614,7 @@ export function DetailPanel({
               <StatusDot status={executor.status} />
               <span className="capitalize">{executor.status}</span>
             </div>
-            <span className="rounded bg-[var(--color-surface)] px-2 py-0.5 text-xs font-medium border border-[var(--color-border)]/50">
+            <span className="rounded bg-transparent px-2 py-0.5 text-xs font-medium border border-[var(--color-border)] ghost-panel/50">
               {executor.type}
             </span>
             <span className="text-[var(--color-text-muted)]">{executor.connector}</span>
@@ -626,7 +626,7 @@ export function DetailPanel({
               {sideLabel}
             </span>
             {executor.close_type && (
-              <span className="rounded bg-[var(--color-surface)] px-2 py-0.5 text-xs font-medium border border-[var(--color-border)]/50">
+              <span className="rounded bg-transparent px-2 py-0.5 text-xs font-medium border border-[var(--color-border)] ghost-panel/50">
                 {executor.close_type}
               </span>
             )}
@@ -634,7 +634,7 @@ export function DetailPanel({
 
           {/* Controller ID */}
           {executor.controller_id && (
-            <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-1">
+            <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4 space-y-1">
               <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
                 Controller
               </h3>
@@ -655,7 +655,7 @@ export function DetailPanel({
 
           {/* Price Info */}
           {(executor.entry_price > 0 || executor.current_price > 0) && (
-            <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-3">
+            <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4 space-y-3">
               <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
                 Price Info
               </h3>
@@ -677,7 +677,7 @@ export function DetailPanel({
           )}
 
           {/* PnL Breakdown */}
-          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-3">
+          <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4 space-y-3">
             <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
               PnL & Volume
             </h3>
@@ -712,7 +712,7 @@ export function DetailPanel({
 
           {/* Position-specific details */}
           {isPosition && (
-            <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-3">
+            <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4 space-y-3">
               <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
                 Position Details
               </h3>
@@ -751,7 +751,7 @@ export function DetailPanel({
 
           {/* Grid-specific details */}
           {isGrid && (
-            <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-3">
+            <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4 space-y-3">
               <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
                 Grid Details
               </h3>
@@ -818,7 +818,7 @@ export function DetailPanel({
 
           {/* Timestamps */}
           {executor.timestamp > 0 && (
-            <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-1">
+            <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4 space-y-1">
               <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
                 Timing
               </h3>
@@ -843,7 +843,7 @@ export function DetailPanel({
 
           {/* Custom Info */}
           {customEntries.length > 0 && (
-            <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-2">
+            <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4 space-y-2">
               <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
                 Custom Info
               </h3>
@@ -864,7 +864,7 @@ export function DetailPanel({
 
           {/* Config */}
           {configEntries.length > 0 && (
-            <details className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
+            <details className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent">
               <summary className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)] cursor-pointer select-none hover:text-[var(--color-text)]">
                 Raw Config ({configEntries.length} fields)
               </summary>
@@ -932,12 +932,12 @@ function BulkActionBar({
 }) {
   if (count === 0) return null;
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/5 px-4 py-2.5">
+    <div className="flex items-center gap-3 rounded-none border border-[var(--color-primary)]/30 bg-transparent/5 px-4 py-2.5">
       <span className="text-sm font-medium">{count} selected</span>
       <div className="flex-1" />
       <button
         onClick={onExport}
-        className="flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs font-medium hover:bg-[var(--color-surface-hover)] transition-colors"
+        className="flex items-center gap-1.5 rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-1.5 text-xs font-medium hover:bg-[var(--color-surface-hover)] transition-colors"
       >
         <Download className="h-3.5 w-3.5" />
         Export CSV
@@ -945,7 +945,7 @@ function BulkActionBar({
       <button
         onClick={onStop}
         disabled={stopping}
-        className="flex items-center gap-1.5 rounded-md bg-[var(--color-red)] px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 transition-colors disabled:opacity-50"
+        className="flex items-center gap-1.5 rounded-none bg-[var(--color-red)] px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 transition-colors disabled:opacity-50"
       >
         <Square className="h-3.5 w-3.5" />
         {stopping ? "Stopping\u2026" : "Stop Selected"}
@@ -982,7 +982,7 @@ function StopConfirmDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onCancel}>
       <div
-        className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-xl p-6 w-full max-w-sm space-y-4"
+        className="bg-transparent border border-[var(--color-border)] ghost-panel rounded-none shadow-none p-6 w-full max-w-sm space-y-4"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-sm font-semibold">
@@ -1014,13 +1014,13 @@ function StopConfirmDialog({
             <button
               type="button"
               onClick={onCancel}
-              className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs font-medium hover:bg-[var(--color-surface-hover)] transition-colors"
+              className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-1.5 text-xs font-medium hover:bg-[var(--color-surface-hover)] transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="rounded-md bg-[var(--color-red)] px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 transition-colors"
+              className="rounded-none bg-[var(--color-red)] px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 transition-colors"
             >
               Confirm Stop
             </button>
@@ -1237,7 +1237,7 @@ export function Executors() {
           {/* New Executor button */}
           <button
             onClick={() => navigate("/trade")}
-            className="flex items-center gap-1.5 rounded-md bg-[var(--color-primary)] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:brightness-110"
+            className="flex items-center gap-1.5 ghost-button text-xs font-medium text-white transition-colors hover:brightness-110"
           >
             <Plus className="h-3.5 w-3.5" />
             New Executor
@@ -1245,7 +1245,7 @@ export function Executors() {
           {/* Export all */}
           <button
             onClick={() => exportCsv(filteredExecutors)}
-            className="flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs font-medium hover:bg-[var(--color-surface-hover)] transition-colors"
+            className="flex items-center gap-1.5 rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-1.5 text-xs font-medium hover:bg-[var(--color-surface-hover)] transition-colors"
             title="Export all to CSV"
           >
             <Download className="h-3.5 w-3.5" />
@@ -1263,7 +1263,7 @@ export function Executors() {
           onChange={(e) =>
             setFilters((f) => ({ ...f, trading_pair: e.target.value }))
           }
-          className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-sm transition-colors hover:border-[var(--color-primary)]/50 focus:border-[var(--color-primary)] focus:outline-none"
+          className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-1.5 text-sm transition-colors hover:border-[var(--color-primary)]/50 focus:border-[var(--color-primary)] focus:outline-none"
         />
         <MultiSelect
           options={executorTypes}
@@ -1286,14 +1286,14 @@ export function Executors() {
         {reachedCap && (
           <button
             onClick={() => setMaxPages((p) => p + 40)}
-            className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs font-medium hover:bg-[var(--color-surface-hover)] transition-colors"
+            className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-1.5 text-xs font-medium hover:bg-[var(--color-surface-hover)] transition-colors"
           >
             Load more
           </button>
         )}
         <button
           onClick={() => refetch()}
-          className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs font-medium hover:bg-[var(--color-surface-hover)] transition-colors"
+          className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-1.5 text-xs font-medium hover:bg-[var(--color-surface-hover)] transition-colors"
           title="Refresh"
         >
           Refresh

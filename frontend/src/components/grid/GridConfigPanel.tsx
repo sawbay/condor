@@ -85,8 +85,8 @@ function PriceField({
           }
           className={`flex items-center rounded border px-2 transition-colors ${
             isActive
-              ? "border-[var(--color-primary)] bg-[var(--color-primary)]/20 text-[var(--color-primary)]"
-              : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
+              ? "border-[var(--color-primary)] bg-transparent/20 text-[var(--color-primary)]"
+              : "border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
           }`}
           title="Pick from chart"
         >
@@ -144,7 +144,7 @@ function NumberField({
           }}
           onBlur={() => setLocalValue(displayValue === 0 ? "" : String(displayValue))}
           placeholder="0"
-          className="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 py-1.5 font-mono text-xs text-[var(--color-text)] placeholder:text-[var(--color-text-muted)]/40 focus:border-[var(--color-primary)] focus:outline-none"
+          className="flex-1 rounded border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] px-2.5 py-1.5 font-mono text-xs text-[var(--color-text)] placeholder:text-[var(--color-text-muted)]/40 focus:border-[var(--color-primary)] focus:outline-none"
         />
         {suffix && (
           <span className="text-[10px] text-[var(--color-text-muted)]">{suffix}</span>
@@ -171,7 +171,7 @@ function ToggleField({
       <button
         onClick={() => dispatch({ type: "SET_FIELD", field, value: !value })}
         className={`relative h-5 w-9 rounded-full transition-colors ${
-          value ? "bg-[var(--color-primary)]" : "bg-[var(--color-border)]"
+          value ? "bg-transparent" : "bg-[var(--color-border)]"
         }`}
       >
         <span
@@ -281,7 +281,7 @@ export function GridConfigPanel({ state, dispatch, currentPrice, isSpot = false 
             className={`flex-1 rounded py-2 text-xs font-bold transition-colors ${
               state.side === 1
                 ? "bg-[var(--color-green)] text-white"
-                : "bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
+                : "bg-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
             }`}
           >
             LONG
@@ -291,7 +291,7 @@ export function GridConfigPanel({ state, dispatch, currentPrice, isSpot = false 
             className={`flex-1 rounded py-2 text-xs font-bold transition-colors ${
               state.side === 2
                 ? "bg-[var(--color-red)] text-white"
-                : "bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
+                : "bg-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
             }`}
           >
             SHORT
@@ -306,7 +306,7 @@ export function GridConfigPanel({ state, dispatch, currentPrice, isSpot = false 
           <button
             onClick={handleAutoFill}
             disabled={!currentPrice}
-            className="flex items-center gap-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-[10px] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)] disabled:opacity-40"
+            className="flex items-center gap-1 rounded border border-[var(--color-border)] ghost-panel bg-transparent px-2 py-1 text-[10px] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)] disabled:opacity-40"
             title="Auto-fill from current price"
           >
             <Sparkles className="h-3 w-3" />

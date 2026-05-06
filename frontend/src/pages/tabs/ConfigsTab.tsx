@@ -97,9 +97,9 @@ function StandaloneConfigEditor({
   };
 
   return (
-    <div className={`rounded-lg border overflow-hidden transition-colors ${isDirty ? "border-[var(--color-warning)]/60" : "border-[var(--color-border)]"}`}>
+    <div className={`rounded-none border overflow-hidden transition-colors ${isDirty ? "border-[var(--color-warning)]/60" : "border-[var(--color-border)]"}`}>
       {/* Header */}
-      <div className="flex w-full items-center bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] transition-colors">
+      <div className="flex w-full items-center bg-transparent hover:bg-[var(--color-surface-hover)] transition-colors">
         <button
           className="flex flex-1 items-center gap-3 px-4 py-3 text-left"
           onClick={() => setExpanded(!expanded)}
@@ -163,7 +163,7 @@ function StandaloneConfigEditor({
             <button
               onClick={handleSave}
               disabled={!canSave || saveMutation.isPending}
-              className="flex items-center gap-1.5 rounded-md bg-[var(--color-primary)] px-3 py-1.5 text-xs font-medium text-white transition-opacity disabled:opacity-40"
+              className="flex items-center gap-1.5 ghost-button text-xs font-medium text-white transition-opacity disabled:opacity-40"
             >
               {saveMutation.isPending ? (
                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -177,13 +177,13 @@ function StandaloneConfigEditor({
           </div>
 
           {yamlError && (
-            <div className="mx-4 mb-2 flex items-start gap-2 rounded-md border border-[var(--color-red)]/40 bg-[var(--color-red)]/10 px-3 py-2 text-xs text-[var(--color-red)]">
+            <div className="mx-4 mb-2 flex items-start gap-2 rounded-none border border-[var(--color-red)]/40 bg-[var(--color-red)]/10 px-3 py-2 text-xs text-[var(--color-red)]">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
               <span className="break-all">{yamlError}</span>
             </div>
           )}
           {saveMutation.isError && (
-            <div className="mx-4 mb-2 rounded-md border border-[var(--color-red)]/40 bg-[var(--color-red)]/10 px-3 py-2 text-xs text-[var(--color-red)]">
+            <div className="mx-4 mb-2 rounded-none border border-[var(--color-red)]/40 bg-[var(--color-red)]/10 px-3 py-2 text-xs text-[var(--color-red)]">
               {saveMutation.error instanceof Error ? saveMutation.error.message : "Save failed"}
             </div>
           )}
@@ -268,7 +268,7 @@ function UploadConfigDialog({
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[560px] md:max-h-[80vh] bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl shadow-xl z-50 flex flex-col">
+      <div className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[560px] md:max-h-[80vh] bg-[var(--color-bg)] border border-[var(--color-border)] ghost-panel rounded-none shadow-none z-50 flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-sm font-semibold">Upload Config</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-surface-hover)]">
@@ -282,9 +282,9 @@ function UploadConfigDialog({
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
-            className={`rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
+            className={`rounded-none border-2 border-dashed p-6 text-center transition-colors ${
               isDragging
-                ? "border-[var(--color-primary)] bg-[var(--color-primary)]/5"
+                ? "border-[var(--color-primary)] bg-transparent/5"
                 : "border-[var(--color-border)] hover:border-[var(--color-text-muted)]"
             }`}
           >
@@ -302,7 +302,7 @@ function UploadConfigDialog({
           />
 
           {parseError && (
-            <div className="flex items-start gap-2 rounded-md border border-[var(--color-red)]/40 bg-[var(--color-red)]/10 px-3 py-2 text-xs text-[var(--color-red)]">
+            <div className="flex items-start gap-2 rounded-none border border-[var(--color-red)]/40 bg-[var(--color-red)]/10 px-3 py-2 text-xs text-[var(--color-red)]">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
               <span>{parseError}</span>
             </div>
@@ -315,13 +315,13 @@ function UploadConfigDialog({
               {createMutation.error instanceof Error ? createMutation.error.message : "Failed"}
             </span>
           )}
-          <button onClick={onClose} className="rounded-md px-3 py-1.5 text-sm text-[var(--color-text-muted)]">
+          <button onClick={onClose} className="rounded-none px-3 py-1.5 text-sm text-[var(--color-text-muted)]">
             Cancel
           </button>
           <button
             onClick={() => createMutation.mutate()}
             disabled={!!parseError || !yamlContent.trim() || createMutation.isPending}
-            className="flex items-center gap-1.5 rounded-md bg-[var(--color-primary)] px-4 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+            className="flex items-center gap-1.5 ghost-button text-sm font-medium text-white disabled:opacity-40"
           >
             {createMutation.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
             Upload
@@ -389,7 +389,7 @@ function CloneConfigDialog({
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[560px] md:max-h-[80vh] bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl shadow-xl z-50 flex flex-col">
+      <div className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[560px] md:max-h-[80vh] bg-[var(--color-bg)] border border-[var(--color-border)] ghost-panel rounded-none shadow-none z-50 flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
           <div>
             <h2 className="text-sm font-semibold">Clone Config</h2>
@@ -411,7 +411,7 @@ function CloneConfigDialog({
               type="text"
               value={newId}
               onChange={(e) => setNewId(e.target.value)}
-              className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm focus:border-[var(--color-primary)] focus:outline-none"
+              className="w-full rounded-none border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-2 text-sm focus:border-[var(--color-primary)] focus:outline-none"
             />
           </div>
 
@@ -430,7 +430,7 @@ function CloneConfigDialog({
           )}
 
           {yamlError && (
-            <div className="flex items-start gap-2 rounded-md border border-[var(--color-red)]/40 bg-[var(--color-red)]/10 px-3 py-2 text-xs text-[var(--color-red)]">
+            <div className="flex items-start gap-2 rounded-none border border-[var(--color-red)]/40 bg-[var(--color-red)]/10 px-3 py-2 text-xs text-[var(--color-red)]">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
               <span>{yamlError}</span>
             </div>
@@ -443,13 +443,13 @@ function CloneConfigDialog({
               {createMutation.error instanceof Error ? createMutation.error.message : "Failed"}
             </span>
           )}
-          <button onClick={onClose} className="rounded-md px-3 py-1.5 text-sm text-[var(--color-text-muted)]">
+          <button onClick={onClose} className="rounded-none px-3 py-1.5 text-sm text-[var(--color-text-muted)]">
             Cancel
           </button>
           <button
             onClick={() => createMutation.mutate()}
             disabled={!newId.trim() || !!yamlError || createMutation.isPending}
-            className="flex items-center gap-1.5 rounded-md bg-[var(--color-primary)] px-4 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+            className="flex items-center gap-1.5 ghost-button text-sm font-medium text-white disabled:opacity-40"
           >
             {createMutation.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
             Clone
@@ -484,24 +484,24 @@ function DeleteConfirmDialog({
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl shadow-xl z-50 p-5">
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] bg-[var(--color-bg)] border border-[var(--color-border)] ghost-panel rounded-none shadow-none z-50 p-5">
         <h2 className="text-sm font-semibold mb-2">Delete Config</h2>
         <p className="text-xs text-[var(--color-text-muted)] mb-4">
           Are you sure you want to delete <span className="font-mono font-medium text-[var(--color-text)]">{configId}</span>? This cannot be undone.
         </p>
         {deleteMutation.isError && (
-          <div className="mb-3 rounded-md border border-[var(--color-red)]/40 bg-[var(--color-red)]/10 px-3 py-2 text-xs text-[var(--color-red)]">
+          <div className="mb-3 rounded-none border border-[var(--color-red)]/40 bg-[var(--color-red)]/10 px-3 py-2 text-xs text-[var(--color-red)]">
             {deleteMutation.error instanceof Error ? deleteMutation.error.message : "Delete failed"}
           </div>
         )}
         <div className="flex items-center justify-end gap-3">
-          <button onClick={onClose} className="rounded-md px-3 py-1.5 text-sm text-[var(--color-text-muted)]">
+          <button onClick={onClose} className="rounded-none px-3 py-1.5 text-sm text-[var(--color-text-muted)]">
             Cancel
           </button>
           <button
             onClick={() => deleteMutation.mutate()}
             disabled={deleteMutation.isPending}
-            className="flex items-center gap-1.5 rounded-md bg-[var(--color-red)] px-4 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+            className="flex items-center gap-1.5 rounded-none bg-[var(--color-red)] px-4 py-1.5 text-sm font-medium text-white disabled:opacity-40"
           >
             {deleteMutation.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
             Delete
@@ -572,7 +572,7 @@ export function ConfigsTab() {
         <div className="flex justify-end">
           <button
             onClick={() => setShowUpload(true)}
-            className="flex items-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white"
+            className="flex items-center gap-2 ghost-button"
           >
             <Upload className="h-4 w-4" />
             Upload Config
@@ -598,12 +598,12 @@ export function ConfigsTab() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Filter configs..."
-            className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] pl-10 pr-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]/50 outline-none transition-colors focus:border-[var(--color-primary)]"
+            className="w-full rounded-none border border-[var(--color-border)] ghost-panel bg-transparent pl-10 pr-3 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]/50 outline-none transition-colors focus:border-[var(--color-primary)]"
           />
         </div>
         <button
           onClick={() => setShowUpload(true)}
-          className="flex items-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white transition-all hover:shadow-lg hover:shadow-[var(--color-primary)]/20"
+          className="flex items-center gap-2 ghost-button shadow-none hover:shadow-[var(--color-primary)]/20"
         >
           <Upload className="h-4 w-4" />
           Upload

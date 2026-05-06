@@ -42,7 +42,7 @@ function BotCard({ bot, onClick }: { bot: ArchivedBotSummary; onClick: () => voi
   return (
     <button
       onClick={onClick}
-      className="w-full text-left rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 hover:border-[var(--color-primary)]/50 hover:bg-[var(--color-surface-hover)] transition-colors"
+      className="w-full text-left rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4 hover:border-[var(--color-primary)]/50 hover:bg-[var(--color-surface-hover)] transition-colors"
     >
       <div className="flex items-start justify-between mb-2">
         <h3 className="font-semibold text-sm truncate">{bot.bot_name}</h3>
@@ -159,7 +159,7 @@ function ArchivedBotsList() {
 
 function StatCard({ label, value, className }: { label: string; value: string; className?: string }) {
   return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+    <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-3">
       <p className="text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] mb-1">{label}</p>
       <p className={`text-sm font-semibold ${className ?? ""}`}>{value}</p>
     </div>
@@ -243,7 +243,7 @@ function ExecutorTable({ server, dbPath, executorCount }: { server: string; dbPa
       <h3 className="text-xs font-medium text-[var(--color-text-muted)] mb-2 uppercase tracking-wider">
         Executors ({total})
       </h3>
-      <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] overflow-auto">
+      <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent overflow-auto">
         {isLoading ? (
           <div className="flex items-center justify-center h-24">
             <Loader2 className="h-5 w-5 animate-spin text-[var(--color-text-muted)]" />
@@ -480,8 +480,8 @@ export function ArchivedBotDetail({ dbPath, startTime: botStartTime, endTime: bo
                   onClick={() => setSelectedPairKey(key)}
                   className={`rounded px-2 py-0.5 text-[11px] transition-colors ${
                     isSelected
-                      ? "bg-[var(--color-primary)]/20 text-[var(--color-primary)] border border-[var(--color-primary)]/40"
-                      : "bg-[var(--color-bg)] text-[var(--color-text-muted)] border border-[var(--color-border)] hover:border-[var(--color-text-muted)]"
+                      ? "bg-transparent/20 text-[var(--color-primary)] border border-[var(--color-primary)]/40"
+                      : "bg-[var(--color-bg)] text-[var(--color-text-muted)] border border-[var(--color-border)] ghost-panel hover:border-[var(--color-text-muted)]"
                   }`}
                 >
                   {opt.pair} ({opt.count})
@@ -511,7 +511,7 @@ export function ArchivedBotDetail({ dbPath, startTime: botStartTime, endTime: bo
           <h3 className="text-xs font-medium text-[var(--color-text-muted)] mb-2 uppercase tracking-wider">
             PnL by Trading Pair
           </h3>
-          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3 space-y-2">
+          <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-3 space-y-2">
             {pnlPairs.map(([pair, pnl]) => (
               <PnlByPairBar key={pair} pair={pair} pnl={pnl} maxAbs={maxAbsPnl} />
             ))}

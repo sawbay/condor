@@ -187,10 +187,10 @@ export function Routines() {
                 <button
                   key={r.name}
                   onClick={() => handleSelect(r)}
-                  className={`w-full rounded-lg border p-3 text-left transition-all ${
+                  className={`w-full rounded-none border p-3 text-left transition-all ${
                     isActive
-                      ? "border-[var(--color-primary)]/40 bg-[var(--color-primary)]/5"
-                      : "border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/20"
+                      ? "border-[var(--color-primary)]/40 bg-transparent/5"
+                      : "border-[var(--color-border)] bg-transparent hover:border-[var(--color-primary)]/20"
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -225,7 +225,7 @@ export function Routines() {
         </div>
 
         {/* ── Right: Detail ── */}
-        <div className="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+        <div className="flex-1 rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-5">
           {!selectedRoutine ? (
             <div className="flex h-full items-center justify-center text-sm text-[var(--color-text-muted)]">
               Select a routine from the catalog
@@ -262,7 +262,7 @@ export function Routines() {
                   type="button"
                   disabled={runMutation.isPending || isRunning}
                   onClick={() => runMutation.mutate()}
-                  className="flex items-center gap-1.5 rounded bg-[var(--color-primary)] px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-[var(--color-primary)]/80 disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded bg-transparent px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-transparent/80 disabled:opacity-50"
                 >
                   {runMutation.isPending || isRunning ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -313,7 +313,7 @@ export function Routines() {
                     {selectedInstances.map((inst) => (
                       <div
                         key={inst.instance_id}
-                        className="flex items-center justify-between rounded-md border border-[var(--color-border)] bg-[var(--color-surface-hover)]/50 px-3 py-2"
+                        className="flex items-center justify-between rounded-none border border-[var(--color-border)] ghost-panel bg-[var(--color-surface-hover)]/50 px-3 py-2"
                       >
                         <div className="flex items-center gap-3">
                           <code className="text-xs font-mono text-[var(--color-primary)]">

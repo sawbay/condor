@@ -24,13 +24,13 @@ export function ScheduleDropdown({ onSchedule, disabled }: Props) {
         type="button"
         disabled={disabled}
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs font-medium text-[var(--color-text)] transition-colors hover:bg-[var(--color-surface-hover)] disabled:opacity-50"
+        className="flex items-center gap-1 rounded border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-1.5 text-xs font-medium text-[var(--color-text)] transition-colors hover:bg-[var(--color-surface-hover)] disabled:opacity-50"
       >
         Schedule
         <ChevronDown className="h-3 w-3" />
       </button>
       {open && (
-        <div className="absolute right-0 z-10 mt-1 w-28 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] py-1 shadow-lg">
+        <div className="absolute right-0 z-10 mt-1 w-28 rounded-none border border-[var(--color-border)] ghost-panel bg-transparent py-1 shadow-none">
           {PRESETS.map((p) => (
             <button
               key={p.sec}

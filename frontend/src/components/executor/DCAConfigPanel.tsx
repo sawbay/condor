@@ -354,7 +354,7 @@ export function DCAConfigPanel({ state, dispatch, currentPrice, isSpot = false, 
             {currentPrice && currentPrice > 0 && (
               <button
                 onClick={() => dispatch({ type: "AUTO_FILL", currentPrice })}
-                className="flex items-center gap-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-[10px] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)]"
+                className="flex items-center gap-1 rounded border border-[var(--color-border)] ghost-panel bg-transparent px-2 py-1 text-[10px] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)]"
               >
                 <Sparkles className="h-3 w-3" />
                 Auto-fill
@@ -362,7 +362,7 @@ export function DCAConfigPanel({ state, dispatch, currentPrice, isSpot = false, 
             )}
             <button
               onClick={() => dispatch({ type: "ADD_LEVEL" })}
-              className="flex items-center gap-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-[10px] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)]"
+              className="flex items-center gap-1 rounded border border-[var(--color-border)] ghost-panel bg-transparent px-2 py-1 text-[10px] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)]"
             >
               <Plus className="h-3 w-3" />
               Add
@@ -383,7 +383,7 @@ export function DCAConfigPanel({ state, dispatch, currentPrice, isSpot = false, 
                 value={amount || ""}
                 onChange={(e) => dispatch({ type: "SET_LEVEL_AMOUNT", index: i, value: parseFloat(e.target.value) || 0 })}
                 placeholder="100"
-                className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1.5 font-mono text-xs text-[var(--color-text)] placeholder:text-[var(--color-text-muted)]/40 focus:border-[var(--color-primary)] focus:outline-none"
+                className="w-full rounded border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] px-2 py-1.5 font-mono text-xs text-[var(--color-text)] placeholder:text-[var(--color-text-muted)]/40 focus:border-[var(--color-primary)] focus:outline-none"
               />
             </div>
             <div className="flex-1">
@@ -399,7 +399,7 @@ export function DCAConfigPanel({ state, dispatch, currentPrice, isSpot = false, 
             {state.amounts_quote.length > 1 && (
               <button
                 onClick={() => dispatch({ type: "REMOVE_LEVEL", index: i })}
-                className="mb-0.5 rounded border border-[var(--color-border)] p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-red)]"
+                className="mb-0.5 rounded border border-[var(--color-border)] ghost-panel p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-red)]"
               >
                 <Minus className="h-3 w-3" />
               </button>

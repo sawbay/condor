@@ -1,81 +1,81 @@
 @import "tailwindcss";
 
-/* ── Dark Mode: Deep Space + Gold ── */
-:root,
-[data-theme="dark"] {
-  --color-bg: #080c18;
-  --color-surface: #0f1525;
-  --color-surface-hover: #161e34;
-  --color-border: #1c2541;
-  --color-text: #e8e6e3;
-  --color-text-muted: #6b7994;
-  --color-accent: #d4a845;
-  --color-primary: #d4a845;
-  --color-primary-hover: #e6be5a;
+/* ── Deep Space Minimalism ── */
+:root, [data-theme="dark"], [data-theme="light"] {
+  --color-bg: #000000;
+  --color-surface: rgba(0, 0, 0, 0.5);
+  --color-surface-hover: rgba(240, 240, 250, 0.05);
+  --color-border: rgba(240, 240, 250, 0.2);
+  --color-text: #f0f0fa;
+  --color-text-muted: rgba(240, 240, 250, 0.6);
+  --color-accent: #f0f0fa;
+  --color-primary: #f0f0fa;
+  --color-primary-hover: #ffffff;
   --color-green: #22c55e;
   --color-red: #ef4444;
   --color-yellow: #eab308;
 
   /* Chart-specific */
-  --chart-bg: #0f1525;
-  --chart-grid: #1c2541;
-  --chart-text: #6b7994;
+  --chart-bg: #000000;
+  --chart-grid: rgba(240, 240, 250, 0.1);
+  --chart-text: rgba(240, 240, 250, 0.6);
   --chart-up: #22c55e;
   --chart-down: #ef4444;
 
   color-scheme: dark;
 }
 
-/* ── Light Mode: Clean Tech + Gold ── */
-[data-theme="light"] {
-  --color-bg: #f5f6fa;
-  --color-surface: #ffffff;
-  --color-surface-hover: #eef0f7;
-  --color-border: #d8dce8;
-  --color-text: #141727;
-  --color-text-muted: #6b7280;
-  --color-accent: #b8860b;
-  --color-primary: #b8860b;
-  --color-primary-hover: #d4a845;
-  --color-green: #16a34a;
-  --color-red: #dc2626;
-  --color-yellow: #ca8a04;
-
-  /* Chart-specific */
-  --chart-bg: #ffffff;
-  --chart-grid: #e5e7eb;
-  --chart-text: #9ca3af;
-  --chart-up: #16a34a;
-  --chart-down: #dc2626;
-
-  color-scheme: light;
-}
-
 body {
   margin: 0;
   background-color: var(--color-bg);
   color: var(--color-text);
-  font-family:
-    "Inter",
-    system-ui,
-    -apple-system,
-    sans-serif;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  font-family: "Barlow", "Rajdhani", "D-DIN", system-ui, -apple-system, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.96px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 * {
   box-sizing: border-box;
 }
 
-/* Smooth theme transitions on surfaces */
-[data-theme] * {
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  letter-spacing: 0.96px;
+  line-height: 1;
 }
 
-/* Scrollbar styling */
+/* Reset for inputs, buttons, and code blocks to maintain usability */
+input, textarea, select {
+  font-family: "Barlow", "D-DIN", system-ui, sans-serif;
+  background-color: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  padding: 0.5rem;
+  outline: none;
+  text-transform: none; /* Removed text-transform so users can type correctly */
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--color-text);
+}
+
+button {
+  font-family: "Barlow", "D-DIN", system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 1.17px;
+  cursor: pointer;
+}
+
+code, pre {
+  text-transform: none; /* Keep code lowercase/as written */
+  font-family: monospace;
+}
+
+/* Scrollbar styling - Minimal */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -83,10 +83,21 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 3px;
+  background: rgba(240, 240, 250, 0.2);
+  border-radius: 0;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
+  background: rgba(240, 240, 250, 0.4);
+}
+
+/* Custom utility classes for SpaceX specific components */
+@layer components {
+  .ghost-button {
+    @apply rounded-[32px] px-6 py-[18px] bg-[rgba(240,240,250,0.1)] border border-[rgba(240,240,250,0.35)] text-[#f0f0fa] transition-colors duration-200 hover:bg-[rgba(240,240,250,0.15)] hover:text-white font-bold tracking-[1.17px] text-[13px] leading-none;
+  }
+
+  .ghost-panel {
+    @apply bg-[rgba(0,0,0,0.5)] border border-[rgba(240,240,250,0.15)];
+  }
 }

@@ -38,7 +38,7 @@ export function RoutineResultView({ instance }: Props) {
   return (
     <div className="space-y-3">
       {instance.has_chart && (
-        <div className="overflow-hidden rounded-lg border border-[var(--color-border)]">
+        <div className="overflow-hidden rounded-none border border-[var(--color-border)] ghost-panel">
           <AuthImage
             src={`/api/v1/routines/instances/${instance.instance_id}/image`}
             alt="Chart"
@@ -48,7 +48,7 @@ export function RoutineResultView({ instance }: Props) {
       )}
 
       {instance.table_data && instance.table_data.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-[var(--color-border)]">
+        <div className="overflow-x-auto rounded-none border border-[var(--color-border)] ghost-panel">
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-hover)]">
@@ -84,7 +84,7 @@ export function RoutineResultView({ instance }: Props) {
       )}
 
       {instance.result_text && (
-        <pre className="max-h-80 overflow-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-xs text-[var(--color-text)] font-mono whitespace-pre-wrap">
+        <pre className="max-h-80 overflow-auto rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-3 text-xs text-[var(--color-text)] font-mono whitespace-pre-wrap">
           {instance.result_text}
         </pre>
       )}

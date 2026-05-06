@@ -473,7 +473,7 @@ export function ExecutorChart({
       className={
         fullscreen
           ? "fixed inset-0 z-50 flex flex-col bg-[var(--color-bg)]"
-          : "rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden"
+          : "rounded-none border border-[var(--color-border)] ghost-panel bg-transparent overflow-hidden"
       }
     >
       {/* Header bar */}

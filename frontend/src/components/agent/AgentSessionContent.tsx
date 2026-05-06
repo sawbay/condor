@@ -56,7 +56,7 @@ export function SessionOverview({
   return (
     <div className="space-y-4">
       {/* Summary Card */}
-      <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+      <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
         <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Summary</h3>
         <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-4">
           <div>
@@ -90,7 +90,7 @@ export function SessionOverview({
 
       {/* Executor Table */}
       {executors.length > 0 && (
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+        <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
           <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Executors</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
@@ -146,7 +146,7 @@ export function SessionOverview({
 
       {/* Metrics table (compact, below chart) */}
       {metrics.length > 0 && (
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+        <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
           <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Metrics Detail</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
@@ -198,14 +198,14 @@ export function SessionActivity({ journal }: { journal: ParsedJournal }) {
   return (
     <div className="space-y-2">
       {decisions.map((d, i) => (
-        <div key={i} className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+        <div key={i} className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-3">
           <div className="flex items-start gap-3">
             {d.tick > 0 ? (
-              <span className="mt-0.5 shrink-0 rounded-md bg-[var(--color-surface-hover)] px-2 py-0.5 font-mono text-xs font-bold text-[var(--color-text-muted)]">
+              <span className="mt-0.5 shrink-0 rounded-none bg-[var(--color-surface-hover)] px-2 py-0.5 font-mono text-xs font-bold text-[var(--color-text-muted)]">
                 #{d.tick}
               </span>
             ) : (
-              <span className="mt-0.5 shrink-0 rounded-md bg-red-500/10 px-2 py-0.5 font-mono text-xs font-bold text-red-400">
+              <span className="mt-0.5 shrink-0 rounded-none bg-red-500/10 px-2 py-0.5 font-mono text-xs font-bold text-red-400">
                 ERR
               </span>
             )}
@@ -396,14 +396,14 @@ export function SessionSnapshots({ slug, sessionNum }: { slug: string; sessionNu
     <div className="flex flex-col gap-4 lg:flex-row">
       {/* Snapshot list */}
       <div className="w-full shrink-0 lg:w-72">
-        <div className="max-h-[600px] space-y-1 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-2">
+        <div className="max-h-[600px] space-y-1 overflow-y-auto rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-2">
           {snapshots.map((snap) => (
             <button
               key={snap.tick}
               onClick={() => setSelectedTick(snap.tick)}
-              className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left transition-colors ${
+              className={`flex w-full items-center justify-between rounded-none px-3 py-2 text-left transition-colors ${
                 selectedTick === snap.tick
-                  ? "bg-[var(--color-primary)]/15 text-[var(--color-primary)]"
+                  ? "bg-transparent/15 text-[var(--color-primary)]"
                   : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
               }`}
             >
@@ -469,7 +469,7 @@ function SnapshotDetail({ slug, sessionNum, tick }: { slug: string; sessionNum: 
 
       {/* Agent Response */}
       {parsed.agentResponse && (
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+        <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-5">
           <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Agent Response</h4>
           <div className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--color-text)]">
             {parsed.agentResponse}
@@ -479,7 +479,7 @@ function SnapshotDetail({ slug, sessionNum, tick }: { slug: string; sessionNum: 
 
       {/* Tool Calls */}
       {parsed.toolCalls.length > 0 && (
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+        <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
           <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
             <Wrench className="h-3 w-3" /> Tool Calls ({parsed.toolCalls.length})
           </h4>
@@ -494,7 +494,7 @@ function SnapshotDetail({ slug, sessionNum, tick }: { slug: string; sessionNum: 
       {/* Risk + Executor side by side */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {parsed.riskState && (
-          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+          <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
             <h4 className="mb-2 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Risk State</h4>
             <div className="space-y-1 font-mono text-xs leading-relaxed text-[var(--color-text-muted)]">
               {parsed.riskState.split("\n").map((line, i) => {
@@ -511,7 +511,7 @@ function SnapshotDetail({ slug, sessionNum, tick }: { slug: string; sessionNum: 
         )}
 
         {parsed.executorState && (
-          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+          <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
             <h4 className="mb-2 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Executor State</h4>
             <pre className="whitespace-pre-wrap font-mono text-xs leading-relaxed text-[var(--color-text-muted)]">
               {parsed.executorState}
@@ -522,7 +522,7 @@ function SnapshotDetail({ slug, sessionNum, tick }: { slug: string; sessionNum: 
 
       {/* Stats Footer */}
       {parsed.stats.duration > 0 && (
-        <div className="flex flex-wrap gap-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3 font-mono text-xs text-[var(--color-text-muted)]">
+        <div className="flex flex-wrap gap-4 rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-3 font-mono text-xs text-[var(--color-text-muted)]">
           <span>Duration: <strong className="text-[var(--color-text)]">{parsed.stats.duration.toFixed(1)}s</strong></span>
         </div>
       )}
@@ -543,7 +543,7 @@ export function ToolCallChip({ tc }: { tc: import("@/lib/parse-agent").ToolCall 
 
   if (!hasDetails) {
     return (
-      <div className="flex items-center gap-1.5 rounded-md border border-[var(--color-border)]/50 bg-[var(--color-bg)] px-2.5 py-1.5">
+      <div className="flex items-center gap-1.5 rounded-none border border-[var(--color-border)] ghost-panel/50 bg-[var(--color-bg)] px-2.5 py-1.5">
         <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotColor}`} />
         <span className="font-mono text-[11px] text-[var(--color-text)]">{shortName}</span>
       </div>
@@ -551,7 +551,7 @@ export function ToolCallChip({ tc }: { tc: import("@/lib/parse-agent").ToolCall 
   }
 
   return (
-    <div className="w-full rounded-md border border-[var(--color-border)]/50 bg-[var(--color-bg)]">
+    <div className="w-full rounded-none border border-[var(--color-border)] ghost-panel/50 bg-[var(--color-bg)]">
       <button
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center justify-between px-2.5 py-1.5 text-left transition-colors hover:bg-[var(--color-surface-hover)]"
@@ -567,7 +567,7 @@ export function ToolCallChip({ tc }: { tc: import("@/lib/parse-agent").ToolCall 
           {tc.input && (
             <div>
               <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Input</span>
-              <pre className="max-h-40 overflow-auto rounded-md bg-[var(--color-surface)] p-2 font-mono text-[11px] leading-relaxed text-[var(--color-text-muted)]">
+              <pre className="max-h-40 overflow-auto rounded-none bg-transparent p-2 font-mono text-[11px] leading-relaxed text-[var(--color-text-muted)]">
                 {tc.input}
               </pre>
             </div>
@@ -575,7 +575,7 @@ export function ToolCallChip({ tc }: { tc: import("@/lib/parse-agent").ToolCall 
           {tc.output && (
             <div>
               <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Output</span>
-              <pre className="max-h-40 overflow-auto rounded-md bg-[var(--color-surface)] p-2 font-mono text-[11px] leading-relaxed text-[var(--color-text-muted)]">
+              <pre className="max-h-40 overflow-auto rounded-none bg-transparent p-2 font-mono text-[11px] leading-relaxed text-[var(--color-text-muted)]">
                 {tc.output}
               </pre>
             </div>
@@ -591,7 +591,7 @@ export function ToolCallChip({ tc }: { tc: import("@/lib/parse-agent").ToolCall 
 export function SystemPromptCard({ prompt, charCount }: { prompt: string; charCount: number }) {
   const [expanded, setExpanded] = useState(false);
   return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
+    <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent">
       <button
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-[var(--color-surface-hover)]"

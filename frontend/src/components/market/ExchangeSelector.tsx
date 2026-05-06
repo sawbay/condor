@@ -43,7 +43,7 @@ export function ExchangeSelector({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-px min-w-[180px] overflow-hidden rounded-b-lg border border-t-0 border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl shadow-black/30">
+        <div className="absolute left-0 top-full z-50 mt-px min-w-[180px] overflow-hidden rounded-b-lg border border-t-0 border-[var(--color-border)] bg-transparent shadow-none shadow-black/30">
           <div className="max-h-72 overflow-y-auto py-1">
             {connectors.map((c) => (
               <button
@@ -51,7 +51,7 @@ export function ExchangeSelector({
                 onClick={() => { onChange(c); setOpen(false); }}
                 className={`flex w-full items-center px-3 py-1.5 text-left text-xs transition-colors ${
                   c === value
-                    ? "bg-[var(--color-primary)]/10 font-medium text-[var(--color-primary)]"
+                    ? "bg-transparent/10 font-medium text-[var(--color-primary)]"
                     : "text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]"
                 }`}
               >

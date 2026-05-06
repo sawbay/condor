@@ -115,7 +115,7 @@ export function BotTradeHistory({
       : null;
 
   return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+    <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <h3 className="font-medium text-[var(--color-text-muted)]">Trade History</h3>
@@ -125,7 +125,7 @@ export function BotTradeHistory({
         </div>
         <div className="flex flex-col items-end gap-1">
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <div className="flex items-center rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] p-0.5">
+            <div className="flex items-center rounded-none border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] p-0.5">
               {HISTORY_RANGES.map((range) => {
                 const active = range.days === historyDays;
                 return (
@@ -135,8 +135,8 @@ export function BotTradeHistory({
                     onClick={() => setHistoryDays(range.days)}
                     className={`min-w-10 rounded px-2 py-1 text-xs transition-colors ${
                       active
-                        ? "bg-[var(--color-surface)] font-semibold text-[var(--color-text)]"
-                        : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]"
+                        ? "bg-transparent font-semibold text-[var(--color-text)]"
+                        : "text-[var(--color-text-muted)] hover:bg-transparent hover:text-[var(--color-text)]"
                     }`}
                   >
                     {range.label}
@@ -147,7 +147,7 @@ export function BotTradeHistory({
             <button
               type="button"
               onClick={() => void refetch()}
-              className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-xs text-[var(--color-text)] hover:bg-[var(--color-surface)]"
+              className="inline-flex items-center gap-1.5 rounded-none border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] px-3 py-1.5 text-xs text-[var(--color-text)] hover:bg-transparent"
             >
               <RefreshCw className="h-3.5 w-3.5" />
               Refresh trades
@@ -155,10 +155,10 @@ export function BotTradeHistory({
             <button
               type="button"
               onClick={() => setAutoRefresh((value) => !value)}
-              className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs ${
+              className={`inline-flex items-center gap-1.5 rounded-none border px-3 py-1.5 text-xs ${
                 autoRefresh
                   ? "border-[var(--color-green)]/40 bg-[var(--color-green)]/10 text-[var(--color-green)]"
-                  : "border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface)]"
+                  : "border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:bg-transparent"
               }`}
             >
               Auto
@@ -235,10 +235,10 @@ export function BotTradeHistory({
             Showing {sortedTrades.length} rows
           </span>
         </div>
-        <div className="flex items-center rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-0.5 py-0.5">
+        <div className="flex items-center rounded-none border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] px-0.5 py-0.5">
           <button
             type="button"
-            className="inline-flex h-6 w-6 items-center justify-center rounded-md text-[10px] text-[var(--color-text)] hover:bg-[var(--color-surface)] disabled:opacity-40"
+            className="inline-flex h-6 w-6 items-center justify-center rounded-none text-[10px] text-[var(--color-text)] hover:bg-transparent disabled:opacity-40"
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={!canGoPrev || isLoading}
           >
@@ -251,10 +251,10 @@ export function BotTradeHistory({
                 <button
                   key={pageIndex}
                   type="button"
-                  className={`min-w-6 rounded-md px-1.5 py-0.5 text-xs transition-colors ${
+                  className={`min-w-6 rounded-none px-1.5 py-0.5 text-xs transition-colors ${
                     active
-                      ? "bg-[var(--color-surface)] font-semibold text-[var(--color-text)]"
-                      : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]"
+                      ? "bg-transparent font-semibold text-[var(--color-text)]"
+                      : "text-[var(--color-text-muted)] hover:bg-transparent hover:text-[var(--color-text)]"
                   }`}
                   onClick={() => setPage(pageIndex)}
                   disabled={isLoading}
@@ -266,7 +266,7 @@ export function BotTradeHistory({
           </div>
           <button
             type="button"
-            className="inline-flex h-6 w-6 items-center justify-center rounded-md text-[10px] text-[var(--color-text)] hover:bg-[var(--color-surface)] disabled:opacity-40"
+            className="inline-flex h-6 w-6 items-center justify-center rounded-none text-[10px] text-[var(--color-text)] hover:bg-transparent disabled:opacity-40"
             onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
             disabled={!canGoNext || isLoading}
           >

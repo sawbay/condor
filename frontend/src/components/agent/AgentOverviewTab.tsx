@@ -26,7 +26,7 @@ export function InstanceCard({ instance }: { instance: import("@/lib/api").Runni
       : null;
 
   return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-4">
+    <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] p-4">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="font-mono text-sm font-bold text-[var(--color-text)]">{instance.agent_id}</span>
@@ -46,7 +46,7 @@ export function InstanceCard({ instance }: { instance: import("@/lib/api").Runni
       </div>
 
       {instance.trading_context && (
-        <p className="mb-3 whitespace-pre-wrap rounded-md bg-[var(--color-surface)] p-2 text-xs leading-relaxed text-[var(--color-text-muted)]">
+        <p className="mb-3 whitespace-pre-wrap rounded-none bg-transparent p-2 text-xs leading-relaxed text-[var(--color-text-muted)]">
           {instance.trading_context}
         </p>
       )}
@@ -111,7 +111,7 @@ export function PerformancePanel({ slug }: { slug: string }) {
   return (
     <div className="space-y-4 lg:col-span-2">
       {/* Stat grid */}
-      <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+      <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
         <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
           <Zap className="h-3.5 w-3.5" /> Performance
         </h3>
@@ -161,7 +161,7 @@ export function PerformancePanel({ slug }: { slug: string }) {
       )}
 
       {/* Sessions table */}
-      <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+      <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
         <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
           <Clock className="h-3.5 w-3.5" /> Sessions ({sessions.length})
         </h3>
@@ -290,7 +290,7 @@ export function OverviewTab({ agent }: { agent: AgentDetail }) {
 
       {/* Running Instances */}
       {hasRunning && (
-        <div className="rounded-lg border border-emerald-500/20 bg-[var(--color-surface)] p-4">
+        <div className="rounded-none border border-emerald-500/20 bg-transparent p-4">
           <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-emerald-400">
             <Zap className="h-3.5 w-3.5" /> Active Sessions ({instances.length})
           </h3>
@@ -303,12 +303,12 @@ export function OverviewTab({ agent }: { agent: AgentDetail }) {
       )}
 
       {/* Default Trading Context */}
-      <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+      <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
         <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
           <MessageSquareText className="h-3.5 w-3.5" /> Default Trading Context
         </h3>
         {defaultTradingContext ? (
-          <p className="whitespace-pre-wrap rounded-md bg-[var(--color-bg)] p-3 text-sm leading-relaxed text-[var(--color-text-muted)]">
+          <p className="whitespace-pre-wrap rounded-none bg-[var(--color-bg)] p-3 text-sm leading-relaxed text-[var(--color-text-muted)]">
             {defaultTradingContext}
           </p>
         ) : (
@@ -320,7 +320,7 @@ export function OverviewTab({ agent }: { agent: AgentDetail }) {
 
       {/* Config + Risk side-by-side */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+        <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
           <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
             <Settings className="h-3.5 w-3.5" /> Default Configuration
           </h3>
@@ -336,7 +336,7 @@ export function OverviewTab({ agent }: { agent: AgentDetail }) {
           </div>
         </div>
 
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+        <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
           <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
             <Zap className="h-3.5 w-3.5" /> Default Risk Limits
           </h3>
@@ -352,7 +352,7 @@ export function OverviewTab({ agent }: { agent: AgentDetail }) {
       </div>
 
       {/* Agent Info */}
-      <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+      <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
         <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
           Agent Info
         </h3>

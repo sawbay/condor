@@ -50,14 +50,14 @@ export function ServerSelector() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-sm hover:bg-[var(--color-surface-hover)]"
+        className="flex w-full items-center justify-between rounded-none border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] px-3 py-1.5 text-sm hover:bg-[var(--color-surface-hover)]"
       >
         <span className="truncate">{current?.name || "Select server"}</span>
         <ChevronDown className="h-3.5 w-3.5 text-[var(--color-text-muted)]" />
       </button>
 
       {open && servers && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] py-1 shadow-lg">
+        <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-none border border-[var(--color-border)] ghost-panel bg-transparent py-1 shadow-none">
           {onlineServers.map((s: ServerInfo) => (
             <button
               key={s.name}

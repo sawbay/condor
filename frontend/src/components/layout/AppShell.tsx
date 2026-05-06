@@ -57,7 +57,7 @@ export function AppShell() {
       )}
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] transition-transform duration-200 md:static md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-[var(--color-border)] bg-transparent transition-transform duration-200 md:static md:translate-x-0 ${
           mobileNavOpen ? "translate-x-0" : "-translate-x-full"
         } ${
           collapsed ? "md:w-14" : "md:w-56"
@@ -104,11 +104,11 @@ export function AppShell() {
               onClick={() => setMobileNavOpen(false)}
               title={collapsed ? label : undefined}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+                `flex items-center gap-3 rounded-none px-3 py-2 text-sm transition-colors ${
                   collapsed ? "justify-center" : ""
                 } ${
                   isActive
-                    ? "bg-[var(--color-primary)]/15 text-[var(--color-primary)]"
+                    ? "bg-transparent/15 text-[var(--color-primary)]"
                     : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
                 }`
               }
@@ -168,7 +168,7 @@ export function AppShell() {
         <div className="sticky top-0 z-20 flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 md:hidden">
           <button
             onClick={() => setMobileNavOpen((prev) => !prev)}
-            className="rounded-md p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
+            className="rounded-none p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
             aria-label={mobileNavOpen ? "Close navigation menu" : "Open navigation menu"}
           >
             {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -179,7 +179,7 @@ export function AppShell() {
           </div>
           <button
             onClick={toggleTheme}
-            className="rounded-md p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-accent)]"
+            className="rounded-none p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-accent)]"
             aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
           >
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}

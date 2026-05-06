@@ -20,7 +20,7 @@ export function RoutineConfigForm({ fields, values, onChange }: Props) {
               onClick={() => onChange(key, !values[key])}
               className={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
                 values[key]
-                  ? "bg-[var(--color-primary)]/20 text-[var(--color-primary)]"
+                  ? "bg-transparent/20 text-[var(--color-primary)]"
                   : "bg-[var(--color-surface-hover)] text-[var(--color-text-muted)]"
               }`}
             >
@@ -35,14 +35,14 @@ export function RoutineConfigForm({ fields, values, onChange }: Props) {
                 const v = field.type === "int" ? parseInt(e.target.value) : parseFloat(e.target.value);
                 if (!isNaN(v)) onChange(key, v);
               }}
-              className="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-sm text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none"
+              className="w-full rounded border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-1.5 text-sm text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none"
             />
           ) : (
             <input
               type="text"
               value={String(values[key] ?? field.default ?? "")}
               onChange={(e) => onChange(key, e.target.value)}
-              className="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-sm text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none"
+              className="w-full rounded border border-[var(--color-border)] ghost-panel bg-transparent px-3 py-1.5 text-sm text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none"
             />
           )}
         </div>

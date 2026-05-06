@@ -338,7 +338,7 @@ export function BotDetail() {
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <span
-          className={`inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] px-3 py-2 text-sm ${containerStatusColor}`}
+          className={`inline-flex items-center gap-1.5 rounded-none border border-[var(--color-border)] ghost-panel px-3 py-2 text-sm ${containerStatusColor}`}
           title={containerError instanceof Error ? containerError.message : "Docker container status"}
         >
           {isFetchingContainer ? <Loader2 className="h-4 w-4 animate-spin" /> : <Circle className="h-2 w-2 fill-current" />}
@@ -348,7 +348,7 @@ export function BotDetail() {
           type="button"
           onClick={() => startContainerMutation.mutate()}
           disabled={isContainerRunning || isContainerActionPending || !containerStatus?.exists}
-          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-green)]/35 bg-[var(--color-green)]/10 px-3 py-2 text-sm font-medium text-[var(--color-green)] transition-colors hover:bg-[var(--color-green)]/15 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-none border border-[var(--color-green)]/35 bg-[var(--color-green)]/10 px-3 py-2 text-sm font-medium text-[var(--color-green)] transition-colors hover:bg-[var(--color-green)]/15 disabled:cursor-not-allowed disabled:opacity-40"
           title="Start the Docker container for this bot"
         >
           {startContainerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
@@ -358,7 +358,7 @@ export function BotDetail() {
           type="button"
           onClick={() => stopContainerMutation.mutate()}
           disabled={!isContainerRunning || isContainerActionPending}
-          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-red)]/35 bg-[var(--color-red)]/10 px-3 py-2 text-sm font-medium text-[var(--color-red)] transition-colors hover:bg-[var(--color-red)]/15 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-none border border-[var(--color-red)]/35 bg-[var(--color-red)]/10 px-3 py-2 text-sm font-medium text-[var(--color-red)] transition-colors hover:bg-[var(--color-red)]/15 disabled:cursor-not-allowed disabled:opacity-40"
           title="Stop the Docker container without archiving the bot"
         >
           {stopContainerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
@@ -368,7 +368,7 @@ export function BotDetail() {
           type="button"
           onClick={() => stopBotMutation.mutate()}
           disabled={bot.status !== "running" || stopBotMutation.isPending}
-          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-red)]/35 bg-[var(--color-red)]/10 px-3 py-2 text-sm font-medium text-[var(--color-red)] transition-colors hover:bg-[var(--color-red)]/15 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-none border border-[var(--color-red)]/35 bg-[var(--color-red)]/10 px-3 py-2 text-sm font-medium text-[var(--color-red)] transition-colors hover:bg-[var(--color-red)]/15 disabled:cursor-not-allowed disabled:opacity-40"
           title="Stop, archive, and delete the entire bot"
         >
           {stopBotMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
@@ -380,7 +380,7 @@ export function BotDetail() {
               type="button"
               onClick={() => stopControllersMutation.mutate()}
               disabled={stopControllersMutation.isPending}
-              className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-red)]/35 bg-[var(--color-red)]/10 px-3 py-2 text-sm font-medium text-[var(--color-red)] transition-colors hover:bg-[var(--color-red)]/15 disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-none border border-[var(--color-red)]/35 bg-[var(--color-red)]/10 px-3 py-2 text-sm font-medium text-[var(--color-red)] transition-colors hover:bg-[var(--color-red)]/15 disabled:cursor-not-allowed disabled:opacity-40"
               title="Stop controllers inside this running bot"
             >
               {stopControllersMutation.isPending ? (
@@ -394,7 +394,7 @@ export function BotDetail() {
               type="button"
               onClick={() => startControllersMutation.mutate()}
               disabled={startControllersMutation.isPending}
-              className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-green)]/35 bg-[var(--color-green)]/10 px-3 py-2 text-sm font-medium text-[var(--color-green)] transition-colors hover:bg-[var(--color-green)]/15 disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-none border border-[var(--color-green)]/35 bg-[var(--color-green)]/10 px-3 py-2 text-sm font-medium text-[var(--color-green)] transition-colors hover:bg-[var(--color-green)]/15 disabled:cursor-not-allowed disabled:opacity-40"
               title="Resume controllers inside this running bot"
             >
               {startControllersMutation.isPending ? (
@@ -409,7 +409,7 @@ export function BotDetail() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+        <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
           <h3 className="mb-3 font-medium text-[var(--color-text-muted)]">
             Configuration
           </h3>
@@ -427,7 +427,7 @@ export function BotDetail() {
           )}
         </div>
 
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+        <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
           <h3 className="mb-3 font-medium text-[var(--color-text-muted)]">
             Performance
           </h3>
@@ -519,7 +519,7 @@ export function BotDetail() {
         <BotTradeHistory server={server} botId={id} />
       </div>
 
-      <div className="mt-6 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+      <div className="mt-6 rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
             <h3 className="font-medium text-[var(--color-text-muted)]">Logs</h3>
@@ -532,7 +532,7 @@ export function BotDetail() {
               <button
                 type="button"
                 onClick={() => void refetch()}
-                className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-xs text-[var(--color-text)] hover:bg-[var(--color-surface)]"
+                className="inline-flex items-center gap-1.5 rounded-none border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] px-3 py-1.5 text-xs text-[var(--color-text)] hover:bg-transparent"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
                 Refresh logs
@@ -540,9 +540,9 @@ export function BotDetail() {
               <button
                 type="button"
                 onClick={() => setAutoRefresh((value) => !value)}
-                className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs ${autoRefresh
+                className={`inline-flex items-center gap-1.5 rounded-none border px-3 py-1.5 text-xs ${autoRefresh
                     ? "border-[var(--color-green)]/40 bg-[var(--color-green)]/10 text-[var(--color-green)]"
-                    : "border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface)]"
+                    : "border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:bg-transparent"
                   }`}
               >
                 Auto
@@ -563,14 +563,14 @@ export function BotDetail() {
           <p className="text-sm text-[var(--color-text-muted)]">No logs available.</p>
         ) : (
           <div ref={logsScrollRef} className="max-h-[32rem] space-y-4 overflow-y-auto pr-1">
-            <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] p-3">
+            <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] p-3">
               <div className="space-y-2 text-xs text-[var(--color-text)]">
                 {parsedLogs.map((log, idx) => (
                   <details
                     key={`${log.sortKey}-${idx}`}
                     className={`group rounded border px-3 py-2 ${log.isError
                         ? "border-[var(--color-red)]/30 bg-[var(--color-red)]/5"
-                        : "border-[var(--color-border)]/40 bg-[var(--color-surface)]"
+                        : "border-[var(--color-border)]/40 bg-transparent"
                       }`}
                   >
                     <summary className="cursor-pointer list-none">

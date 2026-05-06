@@ -56,7 +56,7 @@ function StrategyTab({ slug, content }: { slug: string; content: string }) {
         <button
           onClick={() => saveMut.mutate()}
           disabled={!dirty || saveMut.isPending}
-          className="flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-3 py-1.5 text-xs font-semibold text-white transition-all disabled:opacity-30"
+          className="flex items-center gap-1.5 ghost-button text-xs font-semibold text-white transition-all disabled:opacity-30"
         >
           <Save className="h-3.5 w-3.5" />
           {saveMut.isPending ? "Saving..." : "Save"}
@@ -66,7 +66,7 @@ function StrategyTab({ slug, content }: { slug: string; content: string }) {
         value={value}
         onChange={handleChange}
         spellCheck={false}
-        className="min-h-[500px] w-full resize-y rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 font-mono text-sm leading-relaxed text-[var(--color-text)] outline-none transition-colors focus:border-[var(--color-primary)]/50"
+        className="min-h-[500px] w-full resize-y rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4 font-mono text-sm leading-relaxed text-[var(--color-text)] outline-none transition-colors focus:border-[var(--color-primary)]/50"
       />
     </div>
   );
@@ -94,7 +94,7 @@ function LearningsTab({ slug, content }: { slug: string; content: string }) {
         <button
           onClick={() => saveMut.mutate()}
           disabled={!dirty || saveMut.isPending}
-          className="flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-3 py-1.5 text-xs font-semibold text-white transition-all disabled:opacity-30"
+          className="flex items-center gap-1.5 ghost-button text-xs font-semibold text-white transition-all disabled:opacity-30"
         >
           <Save className="h-3.5 w-3.5" />
           {saveMut.isPending ? "Saving..." : "Save"}
@@ -104,7 +104,7 @@ function LearningsTab({ slug, content }: { slug: string; content: string }) {
         value={value}
         onChange={(e) => { setValue(e.target.value); setDirty(true); }}
         spellCheck={false}
-        className="min-h-[400px] w-full resize-y rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 font-mono text-sm leading-relaxed text-[var(--color-text)] outline-none transition-colors focus:border-[var(--color-primary)]/50"
+        className="min-h-[400px] w-full resize-y rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-4 font-mono text-sm leading-relaxed text-[var(--color-text)] outline-none transition-colors focus:border-[var(--color-primary)]/50"
       />
     </div>
   );
@@ -168,14 +168,14 @@ export function AgentDetail() {
       </div>
 
       {/* Tab bar */}
-      <div className="mb-6 flex gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-1">
+      <div className="mb-6 flex gap-1 rounded-none border border-[var(--color-border)] ghost-panel bg-transparent p-1">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 rounded-none px-3 py-1.5 text-xs font-medium transition-all ${
               activeTab === id
-                ? "bg-[var(--color-primary)]/15 text-[var(--color-primary)]"
+                ? "bg-transparent/15 text-[var(--color-primary)]"
                 : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
             }`}
           >

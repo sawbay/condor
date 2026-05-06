@@ -393,7 +393,7 @@ export function CreateExecutor() {
   return (
     <div className="-m-6 flex h-[calc(100%+3rem)] flex-col">
       {/* Top Bar */}
-      <div className="flex items-center border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="flex items-center border-b border-[var(--color-border)] bg-transparent">
         {/* Back button */}
         <button
           onClick={() => navigate(-1)}
@@ -426,14 +426,14 @@ export function CreateExecutor() {
 
         {/* Interval + Range */}
         <div className="flex items-center gap-3 border-l border-[var(--color-border)] px-4 py-2">
-          <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]">
+          <div className="flex overflow-hidden rounded-none border border-[var(--color-border)] ghost-panel">
             {INTERVALS.map((iv) => (
               <button
                 key={iv}
                 onClick={() => gridDispatch({ type: "SET_FIELD", field: "interval", value: iv })}
                 className={`px-2.5 py-1 text-xs ${
                   gridState.interval === iv
-                    ? "bg-[var(--color-primary)] text-white"
+                    ? "bg-transparent text-white"
                     : "bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
                 }`}
               >
@@ -444,14 +444,14 @@ export function CreateExecutor() {
 
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] text-[var(--color-text-muted)]">Range:</span>
-            <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]">
+            <div className="flex overflow-hidden rounded-none border border-[var(--color-border)] ghost-panel">
               {LOOKBACK_OPTIONS.map((opt) => (
                 <button
                   key={opt.label}
                   onClick={() => gridDispatch({ type: "SET_FIELD", field: "lookbackSeconds", value: opt.seconds })}
                   className={`px-2 py-1 text-xs ${
                     gridState.lookbackSeconds === opt.seconds
-                      ? "bg-[var(--color-primary)] text-white"
+                      ? "bg-transparent text-white"
                       : "bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
                   }`}
                 >
@@ -467,7 +467,7 @@ export function CreateExecutor() {
       <div className="flex min-h-0 flex-1">
         {/* Chart + Bottom Pane */}
         <div className="min-w-0 flex-1 flex flex-col border-r border-[var(--color-border)]">
-          <div className="flex-1 min-h-0 overflow-hidden bg-[var(--color-surface)]">
+          <div className="flex-1 min-h-0 overflow-hidden bg-transparent">
             <GridChart
               key={`${connector}:${pair}:${gridState.interval}:${gridState.lookbackSeconds}`}
               server={server}
@@ -496,7 +496,7 @@ export function CreateExecutor() {
         </div>
 
         {/* Right Panel */}
-        <div className="flex w-72 shrink-0 flex-col bg-[var(--color-surface)] xl:w-80">
+        <div className="flex w-72 shrink-0 flex-col bg-transparent xl:w-80">
           {/* Type Tabs */}
           <div className="border-b border-[var(--color-border)]">
             <div className="flex">
@@ -543,7 +543,7 @@ export function CreateExecutor() {
             <button
               onClick={() => createMutation.mutate()}
               disabled={!activeValidation.valid || createMutation.isPending}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 ghost-button text-sm font-bold text-white transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {createMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -559,7 +559,7 @@ export function CreateExecutor() {
       {/* Success toast */}
       {successId && (
         <div className="absolute bottom-16 left-1/2 z-50 -translate-x-1/2">
-          <div className="flex items-center gap-2 rounded-lg border border-[var(--color-green)]/30 bg-[var(--color-surface)] px-4 py-2.5 shadow-2xl shadow-black/40">
+          <div className="flex items-center gap-2 rounded-none border border-[var(--color-green)]/30 bg-transparent px-4 py-2.5 shadow-none shadow-black/40">
             <CheckCircle className="h-4 w-4 text-[var(--color-green)]" />
             <span className="text-xs font-medium text-[var(--color-text)]">{TYPE_LABELS[executorType]} Created</span>
             <span className="font-mono text-[10px] text-[var(--color-text-muted)]">{successId.slice(0, 8)}</span>
@@ -569,7 +569,7 @@ export function CreateExecutor() {
 
       {/* Error toast */}
       {createMutation.isError && (
-        <div className="absolute bottom-16 right-4 rounded-lg border border-[var(--color-red)]/30 bg-[var(--color-red)]/10 px-4 py-2 text-sm text-[var(--color-red)]">
+        <div className="absolute bottom-16 right-4 rounded-none border border-[var(--color-red)]/30 bg-[var(--color-red)]/10 px-4 py-2 text-sm text-[var(--color-red)]">
           {(createMutation.error as Error).message}
         </div>
       )}

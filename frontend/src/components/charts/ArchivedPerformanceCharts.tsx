@@ -592,7 +592,7 @@ export function ArchivedPerformanceCharts({
     : "";
 
   return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
+    <div className="rounded-none border border-[var(--color-border)] ghost-panel bg-transparent overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-1.5 bg-[var(--color-bg)]">
         <p className="text-[10px] text-[var(--color-text-muted)]">

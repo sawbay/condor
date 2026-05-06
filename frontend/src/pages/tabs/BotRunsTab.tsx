@@ -199,11 +199,11 @@ function BotRunsList({
         </span>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-[var(--color-border)]">
+      <div className="overflow-hidden rounded-none border border-[var(--color-border)] ghost-panel">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+              <tr className="border-b border-[var(--color-border)] bg-transparent">
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
                   Bot
                 </th>
@@ -262,10 +262,10 @@ function BotRunsList({
         <span>
           Page {page + 1} of {totalPages}
         </span>
-        <div className="flex items-center rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] p-0.5">
+        <div className="flex items-center rounded-none border border-[var(--color-border)] ghost-panel bg-[var(--color-bg)] p-0.5">
           <button
             type="button"
-            className="inline-flex h-7 w-7 items-center justify-center rounded text-[var(--color-text)] hover:bg-[var(--color-surface)] disabled:opacity-40"
+            className="inline-flex h-7 w-7 items-center justify-center rounded text-[var(--color-text)] hover:bg-transparent disabled:opacity-40"
             onClick={() => setPage((value) => Math.max(0, value - 1))}
             disabled={page <= 0 || isFetching}
           >
@@ -273,7 +273,7 @@ function BotRunsList({
           </button>
           <button
             type="button"
-            className="inline-flex h-7 w-7 items-center justify-center rounded text-[var(--color-text)] hover:bg-[var(--color-surface)] disabled:opacity-40"
+            className="inline-flex h-7 w-7 items-center justify-center rounded text-[var(--color-text)] hover:bg-transparent disabled:opacity-40"
             onClick={() => setPage((value) => Math.min(totalPages - 1, value + 1))}
             disabled={page >= totalPages - 1 || isFetching}
           >

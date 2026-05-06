@@ -281,7 +281,7 @@ export function CreateGridExecutor() {
   return (
     <div className="-m-6 flex h-[calc(100%+3rem)] flex-col">
       {/* Top Bar */}
-      <div className="flex items-center border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="flex items-center border-b border-[var(--color-border)] bg-transparent">
         {/* Back button */}
         <button
           onClick={() => navigate("/executors")}
@@ -325,14 +325,14 @@ export function CreateGridExecutor() {
 
         {/* Interval + Range */}
         <div className="flex items-center gap-3 border-l border-[var(--color-border)] px-4 py-2">
-          <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]">
+          <div className="flex overflow-hidden rounded-none border border-[var(--color-border)] ghost-panel">
             {INTERVALS.map((iv) => (
               <button
                 key={iv}
                 onClick={() => dispatch({ type: "SET_FIELD", field: "interval", value: iv })}
                 className={`px-2.5 py-1 text-xs ${
                   state.interval === iv
-                    ? "bg-[var(--color-primary)] text-white"
+                    ? "bg-transparent text-white"
                     : "bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
                 }`}
               >
@@ -343,14 +343,14 @@ export function CreateGridExecutor() {
 
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] text-[var(--color-text-muted)]">Range:</span>
-            <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]">
+            <div className="flex overflow-hidden rounded-none border border-[var(--color-border)] ghost-panel">
               {LOOKBACK_OPTIONS.map((opt) => (
                 <button
                   key={opt.label}
                   onClick={() => dispatch({ type: "SET_FIELD", field: "lookbackSeconds", value: opt.seconds })}
                   className={`px-2 py-1 text-xs ${
                     state.lookbackSeconds === opt.seconds
-                      ? "bg-[var(--color-primary)] text-white"
+                      ? "bg-transparent text-white"
                       : "bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
                   }`}
                 >
@@ -366,7 +366,7 @@ export function CreateGridExecutor() {
       <div className="flex min-h-0 flex-1">
         {/* Chart */}
         <div className="min-w-0 flex-1 border-r border-[var(--color-border)]">
-          <div className="h-full overflow-hidden bg-[var(--color-surface)]">
+          <div className="h-full overflow-hidden bg-transparent">
             <GridChart
               key={`${state.connector}:${state.pair}:${state.interval}:${state.lookbackSeconds}`}
               server={server}
@@ -387,7 +387,7 @@ export function CreateGridExecutor() {
         </div>
 
         {/* Right Panel */}
-        <div className="flex w-72 shrink-0 flex-col bg-[var(--color-surface)] xl:w-80">
+        <div className="flex w-72 shrink-0 flex-col bg-transparent xl:w-80">
           <div className="border-b border-[var(--color-border)] px-3 py-2">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
               Grid Config
@@ -400,7 +400,7 @@ export function CreateGridExecutor() {
       </div>
 
       {/* Bottom Bar: Launch */}
-      <div className="flex items-center justify-between border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5">
+      <div className="flex items-center justify-between border-t border-[var(--color-border)] bg-transparent px-4 py-2.5">
         <div className="flex items-center gap-3 text-xs">
           {validation.valid ? (
             <span className="text-[var(--color-green)]">Ready to launch</span>
@@ -422,7 +422,7 @@ export function CreateGridExecutor() {
         <button
           onClick={() => createMutation.mutate()}
           disabled={!validation.valid || createMutation.isPending}
-          className="flex items-center gap-2 rounded-lg bg-[var(--color-primary)] px-5 py-2 text-sm font-bold text-white transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center gap-2 ghost-button hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {createMutation.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -436,7 +436,7 @@ export function CreateGridExecutor() {
       {/* Success modal */}
       {successId && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="flex flex-col items-center gap-3 rounded-xl border border-[var(--color-green)]/30 bg-[var(--color-surface)] px-8 py-6 shadow-2xl shadow-black/40">
+          <div className="flex flex-col items-center gap-3 rounded-none border border-[var(--color-green)]/30 bg-transparent px-8 py-6 shadow-none shadow-black/40">
             <CheckCircle className="h-10 w-10 text-[var(--color-green)]" />
             <div className="text-center">
               <p className="text-sm font-semibold text-[var(--color-text)]">Grid Executor Created</p>
@@ -445,7 +445,7 @@ export function CreateGridExecutor() {
             <p className="text-[10px] text-[var(--color-text-muted)]">Redirecting to executors...</p>
             <button
               onClick={() => navigate("/executors")}
-              className="mt-1 rounded-lg bg-[var(--color-primary)] px-4 py-1.5 text-xs font-medium text-white hover:brightness-110"
+              className="mt-1 ghost-button text-xs font-medium text-white hover:brightness-110"
             >
               Go now
             </button>
@@ -455,7 +455,7 @@ export function CreateGridExecutor() {
 
       {/* Error toast */}
       {createMutation.isError && (
-        <div className="absolute bottom-16 right-4 rounded-lg border border-[var(--color-red)]/30 bg-[var(--color-red)]/10 px-4 py-2 text-sm text-[var(--color-red)]">
+        <div className="absolute bottom-16 right-4 rounded-none border border-[var(--color-red)]/30 bg-[var(--color-red)]/10 px-4 py-2 text-sm text-[var(--color-red)]">
           {(createMutation.error as Error).message}
         </div>
       )}
