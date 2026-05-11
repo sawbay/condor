@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Circle, Loader2, Play, RefreshCw, Square } from "lucide-react";
+import { Archive, ArrowLeft, Circle, Loader2, Play, RefreshCw, Square } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { BotTradeHistory } from "@/components/bots/BotTradeHistory";
 import { LogTerminal } from "@/components/bots/LogTerminal";
@@ -116,6 +116,7 @@ function parseLogEntry(log: string | Record<string, unknown>): LogEntry {
 export function BotDetail() {
   const { id } = useParams<{ id: string }>();
   const { server } = useServer();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [now, setNow] = useState(Date.now());
@@ -299,6 +300,28 @@ export function BotDetail() {
     onSuccess: invalidateBotData,
   });
 
+  const archiveBotMutation = useMutation({
+    mutationFn: () => api.stopBot(server!, id!),
+    onSuccess: () => {
+      invalidateBotData();
+      navigate("/bots");
+    },
+  });
+
+  const sendWSCommand = (command: string, params: any = {}) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      console.log(`[WS] Sending command: ${command}`, params);
+      wsRef.current.send(JSON.stringify({
+        action: "command",
+        command,
+        bot_name: id,
+        params
+      }));
+    } else {
+      console.error("[WS] Cannot send command: WS not connected");
+    }
+  };
+
 
   const { bot, config, performance, general_logs, error_logs } = data ?? {
     bot: { name: id, status: "unknown" },
@@ -444,6 +467,7 @@ export function BotDetail() {
                 onClick={() => startContainerMutation.mutate()}
                 disabled={isContainerRunning || isContainerActionPending || !containerStatus?.exists}
                 className="flex items-center justify-center gap-2 rounded-lg bg-green-500/10 border border-green-500/20 py-2.5 text-xs font-bold text-green-500 hover:bg-green-500/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                title="Start Docker Container"
               >
                 <Play className="h-3 w-3 fill-current" /> START
               </button>
@@ -452,10 +476,26 @@ export function BotDetail() {
                 onClick={() => stopContainerMutation.mutate()}
                 disabled={!isContainerRunning || isContainerActionPending}
                 className="flex items-center justify-center gap-2 rounded-lg bg-red-500/10 border border-red-500/20 py-2.5 text-xs font-bold text-red-500 hover:bg-red-500/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                title="Stop Docker Container"
               >
                 <Square className="h-3 w-3 fill-current" /> STOP
               </button>
             </div>
+
+
+
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm("Are you sure you want to archive this bot? This will stop the bot and remove its configuration from the active list.")) {
+                  archiveBotMutation.mutate();
+                }
+              }}
+              disabled={archiveBotMutation.isPending}
+              className="w-full flex items-center justify-center gap-2 rounded-lg bg-red-950/20 border border-red-900/30 py-2.5 text-xs font-bold text-red-500/70 hover:bg-red-500/10 hover:text-red-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <Archive className="h-3 w-3" /> ARCHIVE BOT
+            </button>
           </div>
 
           <div className="glass rounded-xl p-6 space-y-4 border-white/5">
@@ -518,6 +558,7 @@ export function BotDetail() {
                       <th className="pb-2 px-2">Status</th>
                       <th className="pb-2 px-2 text-right">PnL</th>
                       <th className="pb-2 px-2 text-right">Volume</th>
+                      <th className="pb-2 px-2 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -536,8 +577,28 @@ export function BotDetail() {
                           <td className={`py-3 px-3 text-right font-mono font-bold ${pnl >= 0 ? "text-green-400 glow-text-green" : "text-red-400 glow-text-red"}`}>
                             {pnl >= 0 ? "+" : ""}{pnl.toFixed(2)}
                           </td>
-                          <td className="py-3 px-3 rounded-r-lg text-right font-mono opacity-80 group-hover:opacity-100 transition-opacity">
+                          <td className="py-3 px-3 text-right font-mono opacity-80 group-hover:opacity-100 transition-opacity">
                             {Number(nestedPerf.volume_traded ?? 0).toFixed(2)}
+                          </td>
+                          <td className="py-3 px-3 rounded-r-lg text-right">
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => sendWSCommand("start_controller", { controller_id: controllerName })}
+                                disabled={ctrl.status === "running"}
+                                className="p-1 rounded bg-green-500/20 text-green-400 hover:bg-green-500/30 disabled:opacity-30 transition-colors"
+                                title="Start Controller"
+                              >
+                                <Play className="h-3.5 w-3.5 fill-current" />
+                              </button>
+                              <button
+                                onClick={() => sendWSCommand("stop_controller", { controller_id: controllerName })}
+                                disabled={ctrl.status !== "running"}
+                                className="p-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 disabled:opacity-30 transition-colors"
+                                title="Stop Controller"
+                              >
+                                <Square className="h-3.5 w-3.5 fill-current" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
