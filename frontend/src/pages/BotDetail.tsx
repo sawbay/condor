@@ -131,11 +131,11 @@ export function BotDetail() {
 
   // WebSocket for deployment and status monitoring
   useEffect(() => {
-    if (!id) return;
+    if (!id || !server) return;
 
     // Use Basic Auth credentials in the URL as requested
     // Use Authorization Header approach as requested
-    const wsUrl = `wss://humming-api2.sawbay.net/ws/executors`;
+    const wsUrl = `wss://${server}.sawbay.net/ws/executors`;
 
     const establishConnection = () => {
       if (reconnectTimeoutRef.current) {
@@ -238,7 +238,7 @@ export function BotDetail() {
       }
       wsRef.current = null;
     };
-  }, [id]);
+  }, [id, server, queryClient]);
 
   const { data, isLoading, isFetching, error, refetch, dataUpdatedAt } = useQuery({
     queryKey: ["bot", server, id],
