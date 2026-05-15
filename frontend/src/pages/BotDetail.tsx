@@ -6,6 +6,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { BotTradeHistory } from "@/components/bots/BotTradeHistory";
 import { LogTerminal } from "@/components/bots/LogTerminal";
 import { useServer } from "@/hooks/useServer";
+import { useCondorWebSocket } from "@/hooks/useWebSocket";
 import { api } from "@/lib/api";
 
 type LogEntry = {
@@ -121,124 +122,66 @@ export function BotDetail() {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [now, setNow] = useState(Date.now());
   const logsScrollRef = useRef<HTMLDivElement | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
   const [refreshAnchor, setRefreshAnchor] = useState<number | null>(null);
   const refreshIntervalMs = 10000;
-  
-  const reconnectTimeoutRef = useRef<number | null>(null);
-  const reconnectAttempts = useRef(0);
-  const maxReconnectDelay = 30000;
+  const relayChannel = useMemo(
+    () => (server && id ? `hb_ws:${server}:executors:bot-detail-${id}` : null),
+    [server, id],
+  );
+  const { wsRef, wsVersion } = useCondorWebSocket(
+    relayChannel ? [relayChannel] : [],
+    server,
+  );
 
-  // WebSocket for deployment and status monitoring
+  // Backend websocket relay for deployment and status monitoring.
   useEffect(() => {
-    if (!id || !server) return;
+    if (!id || !server || !relayChannel || !wsRef.current) return;
 
-    // Use Basic Auth credentials in the URL as requested
-    // Use Authorization Header approach as requested
-    const wsUrl = `wss://${server}.sawbay.net/ws/executors`;
+    const removeHandler = wsRef.current.onMessage((channel, msg) => {
+      if (channel !== relayChannel) return;
 
-    const establishConnection = () => {
-      if (reconnectTimeoutRef.current) {
-        window.clearTimeout(reconnectTimeoutRef.current);
-      }
-
-      console.log(`[WS] Connecting to ${wsUrl} (Attempt ${reconnectAttempts.current + 1})`);
-      try {
-        const ws = new WebSocket(wsUrl);
-        wsRef.current = ws;
-        setupHandlers(ws);
-      } catch (err) {
-        console.error("[WS] Failed to create WebSocket:", err);
-        handleReconnect();
-      }
-    };
-
-    const handleReconnect = () => {
-      const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), maxReconnectDelay);
-      console.log(`[WS] Reconnecting in ${delay}ms...`);
-      reconnectTimeoutRef.current = window.setTimeout(() => {
-        reconnectAttempts.current++;
-        establishConnection();
-      }, delay);
-    };
-
-    const setupHandlers = (websocket: WebSocket) => {
-      websocket.onopen = () => {
-        console.log("[WS] Connected. Authenticating...");
-        reconnectAttempts.current = 0; // Reset attempts on success
-        
-        websocket.send(JSON.stringify({
-          action: "authenticate",
-          username: "admin",
-          password: "admin"
-        }));
-
-        console.log(`[WS] Subscribing to deployment for: ${id}`);
-        websocket.send(JSON.stringify({
+      const payload = msg as any;
+      if (payload?.type === "bot_deployment_resolved") {
+        wsRef.current?.send(relayChannel, {
           action: "subscribe",
-          type: "bot_deployment",
-          instance_name: id,
-          update_interval: 2.0
-        }));
-      };
-
-      websocket.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          
-          if (msg.type === "bot_deployment_resolved") {
-            websocket.send(JSON.stringify({
-              action: "subscribe",
-              type: "bot_status",
-              bot_name: id
-            }));
-          }
-
-          if (msg.type === "bot_status_update" || msg.type === "bot_status") {
-            const status = msg.status || msg.data?.status;
-            const performance = msg.performance || msg.data?.performance;
-            
-            if (status || performance) {
-              queryClient.setQueryData(["bot", server, id], (old: any) => {
-                if (!old) return old;
-                return { 
-                  ...old, 
-                  bot: { ...old.bot, status: status ?? old.bot.status },
-                  performance: performance ?? old.performance
-                };
-              });
-            }
-          }
-        } catch (err) {
-          console.error("[WS] Error parsing message:", err);
-        }
-      };
-
-      websocket.onerror = (err) => {
-        console.error("[WS] WebSocket error:", err);
-      };
-
-      websocket.onclose = (event) => {
-        console.log(`[WS] WebSocket closed (code: ${event.code})`);
-        if (event.code !== 1000 && event.code !== 1001) {
-          handleReconnect();
-        }
-      };
-    };
-
-    establishConnection();
-
-    return () => {
-      if (reconnectTimeoutRef.current) {
-        window.clearTimeout(reconnectTimeoutRef.current);
+          type: "bot_status",
+          bot_name: id,
+        });
       }
-      const currentWs = wsRef.current;
-      if (currentWs && (currentWs.readyState === WebSocket.OPEN || currentWs.readyState === WebSocket.CONNECTING)) {
-        currentWs.close(1000, "Component unmounted");
+
+      if (payload?.type === "bot_status_update" || payload?.type === "bot_status") {
+        const status = payload.status || payload.data?.status;
+        const performance = payload.performance || payload.data?.performance;
+        const generalLogs = payload.general_logs || payload.data?.general_logs;
+        const errorLogs = payload.error_logs || payload.data?.error_logs;
+
+        if (status || performance || generalLogs || errorLogs) {
+          queryClient.setQueryData(["bot", server, id], (old: any) => {
+            if (!old) return old;
+            return {
+              ...old,
+              bot: { ...old.bot, status: status ?? old.bot.status },
+              performance: performance ?? old.performance,
+              general_logs: generalLogs ?? old.general_logs,
+              error_logs: errorLogs ?? old.error_logs,
+            };
+          });
+        }
       }
-      wsRef.current = null;
-    };
-  }, [id, server, queryClient]);
+    });
+
+    return removeHandler;
+  }, [id, server, relayChannel, queryClient, wsVersion]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!id || !relayChannel || !wsRef.current) return;
+    wsRef.current.send(relayChannel, {
+      action: "subscribe",
+      type: "bot_deployment",
+      instance_name: id,
+      update_interval: 2.0,
+    });
+  }, [id, relayChannel, wsVersion]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data, isLoading, isFetching, error, refetch, dataUpdatedAt } = useQuery({
     queryKey: ["bot", server, id],
@@ -309,14 +252,14 @@ export function BotDetail() {
   });
 
   const sendWSCommand = (command: string, params: any = {}) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
+    if (relayChannel && wsRef.current) {
       console.log(`[WS] Sending command: ${command}`, params);
-      wsRef.current.send(JSON.stringify({
+      wsRef.current.send(relayChannel, {
         action: "command",
         command,
         bot_name: id,
-        params
-      }));
+        params,
+      });
     } else {
       console.error("[WS] Cannot send command: WS not connected");
     }

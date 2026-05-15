@@ -45,6 +45,11 @@ export class CondorWebSocket {
     this._send({ action: "set_candle_duration", channel, duration });
   }
 
+  /** Forward a payload through a backend-managed Hummingbot websocket relay. */
+  send(channel: string, payload: unknown) {
+    this._send({ action: "relay", channel, payload });
+  }
+
   onMessage(handler: MessageHandler) {
     this.handlers.add(handler);
     return () => {

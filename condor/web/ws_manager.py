@@ -5,8 +5,11 @@ import json
 import logging
 import math
 import time
+from contextlib import asynccontextmanager
 from typing import Any, Optional
+from urllib.parse import urlparse, urlunparse
 
+import aiohttp
 from fastapi import WebSocket
 
 from condor.web.auth import decode_jwt
@@ -125,6 +128,10 @@ class WebSocketManager:
         self._trade_tasks: dict[str, asyncio.Task] = {}
         self._executor_tasks: dict[str, asyncio.Task] = {}
         self._order_book_tasks: dict[str, asyncio.Task] = {}
+        self._hb_ws_tasks: dict[str, asyncio.Task] = {}
+        self._hb_ws_queues: dict[str, asyncio.Queue] = {}
+        self._hb_ws_replay_payloads: dict[str, list[Any]] = {}
+        self._hb_ws_connected_once: set[str] = set()
         self._sds_listener_registered = False
         # Track SDS subscriptions: channel -> CacheKey
         self._sds_subscriptions: dict[str, Any] = {}
@@ -207,6 +214,14 @@ class WebSocketManager:
                 task.cancel()
         self._order_book_tasks.clear()
 
+        for task in self._hb_ws_tasks.values():
+            if not task.done():
+                task.cancel()
+        self._hb_ws_tasks.clear()
+        self._hb_ws_queues.clear()
+        self._hb_ws_replay_payloads.clear()
+        self._hb_ws_connected_once.clear()
+
         if self._cleanup_task and not self._cleanup_task.done():
             self._cleanup_task.cancel()
             self._cleanup_task = None
@@ -255,6 +270,8 @@ class WebSocketManager:
                     self._maybe_stop_executor_stream(channel)
                 elif channel.startswith("orderbook:"):
                     self._maybe_stop_order_book_stream(channel)
+                elif channel.startswith("hb_ws:"):
+                    self._maybe_stop_hb_ws_relay(channel)
                 else:
                     self._maybe_unsub_sds(channel)
 
@@ -292,9 +309,15 @@ class WebSocketManager:
         channel = msg.get("channel", "")
 
         if action == "subscribe" and channel:
-            conn.channels.add(channel)
+            if channel.startswith("hb_ws:"):
+                if not await self._handle_hb_ws_subscribe(conn, channel):
+                    return
+            else:
+                conn.channels.add(channel)
             # Send last known data immediately (candles use buffer instead)
-            if channel.startswith("candles:"):
+            if channel.startswith("hb_ws:"):
+                self._ensure_hb_ws_relay(channel)
+            elif channel.startswith("candles:"):
                 duration = msg.get("duration")  # seconds, sent by frontend
                 await self._handle_candle_subscribe(conn, channel, duration)
             elif channel.startswith("orderbook:"):
@@ -324,6 +347,8 @@ class WebSocketManager:
                 self._maybe_stop_trade_stream(channel)
             elif channel.startswith("executors:"):
                 self._maybe_stop_executor_stream(channel)
+            elif channel.startswith("hb_ws:"):
+                self._maybe_stop_hb_ws_relay(channel)
             else:
                 self._maybe_unsub_sds(channel)
 
@@ -332,6 +357,9 @@ class WebSocketManager:
             duration = msg.get("duration")
             if channel.startswith("candles:") and duration:
                 await self._handle_candle_duration_change(conn, channel, int(duration))
+
+        elif action == "relay" and channel:
+            await self._handle_hb_ws_relay(conn, channel, msg.get("payload"))
 
     async def _handle_candle_subscribe(
         self, conn: _Connection, channel: str, duration: int | None
@@ -984,6 +1012,232 @@ class WebSocketManager:
                 await asyncio.sleep(backoff)
                 backoff = min(backoff * 2, 60)
 
+
+    # -- Generic Hummingbot WS relay --
+
+    @staticmethod
+    def _parse_hb_ws_channel(channel: str) -> tuple[str, str, str] | None:
+        """Parse hb_ws:{server}:{endpoint}:{relay_id}."""
+        parts = channel.split(":")
+        if len(parts) < 4 or parts[0] != "hb_ws":
+            return None
+        server_name = parts[1]
+        endpoint = parts[2]
+        relay_id = ":".join(parts[3:])
+        if not server_name or not endpoint or not relay_id:
+            return None
+        return server_name, endpoint, relay_id
+
+    @staticmethod
+    def _is_allowed_hb_ws_endpoint(endpoint: str) -> bool:
+        return endpoint in {"executors", "market_data"}
+
+    async def _handle_hb_ws_subscribe(self, conn: _Connection, channel: str) -> bool:
+        parsed = self._parse_hb_ws_channel(channel)
+        if parsed is None:
+            await self._send(conn, channel, {"type": "error", "message": "Invalid hb_ws channel"})
+            return False
+
+        server_name, endpoint, _relay_id = parsed
+        if not self._is_allowed_hb_ws_endpoint(endpoint):
+            await self._send(
+                conn,
+                channel,
+                {"type": "error", "message": f"Unsupported Hummingbot WS endpoint: {endpoint}"},
+            )
+            return False
+
+        from config_manager import get_config_manager
+
+        cm = get_config_manager()
+        if not cm.has_server_access(conn.user_id, server_name):
+            await self._send(conn, channel, {"type": "error", "message": "No access to server"})
+            return False
+
+        conn.channels.add(channel)
+        return True
+
+    async def _handle_hb_ws_relay(self, conn: _Connection, channel: str, payload: Any) -> None:
+        if channel not in conn.channels:
+            await self._send(
+                conn,
+                channel,
+                {"type": "error", "message": "Relay channel is not subscribed"},
+            )
+            return
+
+        parsed = self._parse_hb_ws_channel(channel)
+        if parsed is None or not self._is_allowed_hb_ws_endpoint(parsed[1]):
+            await self._send(conn, channel, {"type": "error", "message": "Invalid relay channel"})
+            return
+
+        self._ensure_hb_ws_relay(channel)
+        queue = self._hb_ws_queues.setdefault(channel, asyncio.Queue())
+        self._remember_hb_ws_replay_payload(channel, payload)
+        await queue.put(payload)
+
+    def _ensure_hb_ws_relay(self, channel: str) -> None:
+        if channel in self._hb_ws_tasks and not self._hb_ws_tasks[channel].done():
+            return
+        self._hb_ws_queues.setdefault(channel, asyncio.Queue())
+        self._hb_ws_tasks[channel] = asyncio.create_task(self._hb_ws_relay_stream(channel))
+        logger.info("Started Hummingbot WS relay for %s", channel)
+
+    def _maybe_stop_hb_ws_relay(self, channel: str) -> None:
+        for conn in self._connections:
+            if channel in conn.channels:
+                return
+        task = self._hb_ws_tasks.pop(channel, None)
+        if task and not task.done():
+            task.cancel()
+            logger.info("Stopped Hummingbot WS relay for %s", channel)
+        self._hb_ws_queues.pop(channel, None)
+        self._hb_ws_replay_payloads.pop(channel, None)
+        self._hb_ws_connected_once.discard(channel)
+
+    async def _hb_ws_relay_stream(self, channel: str) -> None:
+        parsed = self._parse_hb_ws_channel(channel)
+        if parsed is None:
+            return
+        server_name, endpoint, _relay_id = parsed
+
+        from config_manager import get_config_manager
+
+        cm = get_config_manager()
+        backoff = 5
+
+        while True:
+            writer: asyncio.Task | None = None
+            try:
+                server_config = cm.get_server(server_name) or {}
+                async with self._open_raw_hb_ws(cm, server_config, endpoint) as upstream_ws:
+                    logger.info("Hummingbot WS relay connected: %s", channel)
+                    backoff = 5
+                    await self._authenticate_hb_ws(upstream_ws, server_config)
+                    if channel in self._hb_ws_connected_once:
+                        for payload in self._hb_ws_replay_payloads.get(channel, []):
+                            await self._send_hb_ws_payload(upstream_ws, payload)
+                    else:
+                        self._hb_ws_connected_once.add(channel)
+                    writer = asyncio.create_task(
+                        self._hb_ws_relay_writer(channel, upstream_ws)
+                    )
+
+                    async for upstream_msg in upstream_ws:
+                        if not any(channel in c.channels for c in self._connections):
+                            logger.info("No subscribers for %s, closing Hummingbot WS relay", channel)
+                            return
+                        if upstream_msg.type == aiohttp.WSMsgType.TEXT:
+                            try:
+                                data = json.loads(upstream_msg.data)
+                            except json.JSONDecodeError:
+                                data = {"type": "message", "data": upstream_msg.data}
+                            await self.broadcast(channel, data)
+                        elif upstream_msg.type == aiohttp.WSMsgType.ERROR:
+                            raise RuntimeError(upstream_ws.exception())
+                        elif upstream_msg.type in (aiohttp.WSMsgType.CLOSED, aiohttp.WSMsgType.CLOSE):
+                            break
+
+            except asyncio.CancelledError:
+                return
+            except Exception as e:
+                error_str = str(e)
+                is_permanent = any(code in error_str for code in ("401", "403", "404"))
+                await self.broadcast(
+                    channel,
+                    {"type": "error", "message": f"Hummingbot WS relay error: {error_str}"},
+                )
+                if is_permanent:
+                    logger.warning("Hummingbot WS relay permanent error for %s: %s", channel, e)
+                    return
+
+                logger.warning(
+                    "Hummingbot WS relay error for %s: %s, reconnecting in %ds...",
+                    channel,
+                    e,
+                    backoff,
+                )
+                await asyncio.sleep(backoff)
+                backoff = min(backoff * 2, 60)
+            finally:
+                if writer and not writer.done():
+                    writer.cancel()
+
+    @asynccontextmanager
+    async def _open_raw_hb_ws(self, cm: Any, server_config: dict, endpoint: str):
+        ws_url = self._build_hb_ws_url(cm, server_config, endpoint)
+        async with aiohttp.ClientSession() as session:
+            async with session.ws_connect(ws_url) as ws:
+                yield ws
+
+    @staticmethod
+    def _build_hb_ws_url(cm: Any, server_config: dict, endpoint: str) -> str:
+        base_url = cm.build_server_api_url(server_config).rstrip("/")
+        parsed = urlparse(base_url)
+        scheme = "wss" if parsed.scheme == "https" else "ws"
+        path = f"{parsed.path.rstrip('/')}/ws/{endpoint}"
+        return urlunparse((scheme, parsed.netloc, path, "", "", ""))
+
+    async def _authenticate_hb_ws(self, upstream_ws: Any, server_config: dict) -> None:
+        username = server_config.get("username")
+        password = server_config.get("password")
+        if not username or not password:
+            raise RuntimeError("Configured server is missing Hummingbot websocket credentials")
+        await self._send_hb_ws_payload(
+            upstream_ws,
+            {
+                "action": "authenticate",
+                "username": username,
+                "password": password,
+            },
+        )
+
+    def _remember_hb_ws_replay_payload(self, channel: str, payload: Any) -> None:
+        if not isinstance(payload, dict) or payload.get("action") not in {"authenticate", "subscribe"}:
+            return
+
+        replay_payloads = self._hb_ws_replay_payloads.setdefault(channel, [])
+        identity = (
+            payload.get("action"),
+            payload.get("type"),
+            payload.get("bot_name"),
+            payload.get("instance_name"),
+        )
+        for idx, existing in enumerate(replay_payloads):
+            if not isinstance(existing, dict):
+                continue
+            existing_identity = (
+                existing.get("action"),
+                existing.get("type"),
+                existing.get("bot_name"),
+                existing.get("instance_name"),
+            )
+            if existing_identity == identity:
+                replay_payloads[idx] = payload
+                return
+        replay_payloads.append(payload)
+
+    async def _hb_ws_relay_writer(self, channel: str, upstream_ws: Any) -> None:
+        queue = self._hb_ws_queues.setdefault(channel, asyncio.Queue())
+        while True:
+            payload = await queue.get()
+            await self._send_hb_ws_payload(upstream_ws, payload)
+
+    @staticmethod
+    async def _send_hb_ws_payload(upstream_ws: Any, payload: Any) -> None:
+        if hasattr(upstream_ws, "_send"):
+            await upstream_ws._send(payload)
+            return
+        if hasattr(upstream_ws, "send_json"):
+            await upstream_ws.send_json(payload)
+            return
+        if hasattr(upstream_ws, "send_str"):
+            await upstream_ws.send_str(json.dumps(payload))
+            return
+        if hasattr(upstream_ws, "send"):
+            await upstream_ws.send(json.dumps(payload))
+            return
+        raise RuntimeError("Upstream websocket does not expose a send method")
 
 # -- Singleton --
 
